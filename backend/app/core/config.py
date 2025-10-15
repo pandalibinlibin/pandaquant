@@ -37,9 +37,9 @@ class Settings(BaseSettings):
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -76,6 +76,26 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str | None = None
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: EmailStr | None = None
+
+    INFLUXDB_URL: str = "http://influxdb:8086"
+    INFLUXDB_TOKEN: str = ""
+    INFLUXDB_ORG: str = "quantitative"
+    INFLUXDB_BUCKET: str = "market_data"
+    INFLUXDB_USER: str = "quantitative"
+    INFLUXDB_PASSWORD: str = "quantitative_password"
+
+    REDIS_URL: str = "redis://redis:6379/0"
+
+    TUSHARE_TOKEN: str = ""
+
+    WECHAT_CORP_ID: str = ""
+    WECHAT_CORP_SECRET: str = ""
+    WECHAT_AGENT_ID: str = ""
+
+    DINGTALK_WEBHOOK_URL: str = ""
+
+    QUANTITATIVE_DATA_PATH: str = "/data/quantitative"
+    BACKTEST_RESULTS_PATH: str = "/data/backtest"
 
     @model_validator(mode="after")
     def _set_default_emails_from(self) -> Self:
