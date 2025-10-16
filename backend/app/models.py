@@ -2,6 +2,10 @@ import uuid
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+from datetime import datetime
+from typing import List, Optional
+from uuid import UUID, uuid4
+from sqlalchemy import Index
 
 
 # Shared properties
@@ -44,6 +48,11 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+
+    strategies: List["Strategy"] = Relationship(back_populates="creator")
+    factors: List["Factor"] = Relationship(back_populates="creator")
+    backtests: List["Backtest"] = Relationship(back_populates="creator")
+    signals: List["Signal"] = Relationship(back_populates="creator")
 
 
 # Properties to return via API, id is always required
@@ -111,3 +120,97 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+class Strategy(SQLModel, table=True):
+    __tablename__ = "strategies"
+
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(max_length=100, index=True)
+    description: Optional[str] = Field(default=None, max_length=500)
+    strategy_type: str = Field(max_length=50)
+    status: str = Field(default="draft", max_length=20)
+    config: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: UUID = Field(foreign_key="user.id")
+
+    creator: Optional["User"] = Relationship(back_populates="strategies")
+    backtests: List["Backtest"] = Relationship(back_populates="strategy")
+    signals: List["Signal"] = Relationship(back_populates="strategy")
+
+
+class Factor(SQLModel, table=True):
+    __tablename__ = "factors"
+
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
+    name: str = Field(max_length=100, index=True)
+    description: Optional[str] = Field(default=None, max_length=500)
+    factor_type: str = Field(max_length=50)
+    formula: str = Field(max_length=1000)
+    parameters: Optional[str] = Field(default=None)
+    status: str = Field(default="active", max_length=20)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: UUID = Field(foreign_key="user.id")
+
+    creator: Optional["User"] = Relationship(back_populates="factors")
+
+
+class Backtest(SQLModel, table=True):
+    __tablename__ = "backtests"
+
+    id: Optional[UUID] = Field(
+        default_factory=uuid4,
+        primary_key=True,
+    )
+    name: str = Field(max_length=100, index=True)
+    strategy_id: UUID = Field(foreign_key="strategies.id")
+    start_date: datetime = Field(index=True)
+    end_date: datetime = Field(index=True)
+    initial_capital: float = Field(default=1000000.0)
+    status: str = Field(default="pending", max_length=20)
+    results: Optional[str] = Field(default=None)
+    performance_metrics: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: UUID = Field(foreign_key="user.id")
+
+    strategy: Optional["Strategy"] = Relationship(back_populates="backtests")
+    creator: Optional["User"] = Relationship(back_populates="backtests")
+
+
+class Signal(SQLModel, table=True):
+    __tablename__ = "signals"
+
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
+    strategy_id: UUID = Field(foreign_key="strategies.id")
+    symbol: str = Field(max_length=20, index=True)
+    signal_type: str = Field(max_length=20, index=True)
+    signal_strength: float = Field(default=0.0)
+    price: Optional[float] = Field(default=None)
+    quantity: Optional[int] = Field(default=None)
+    message: Optional[str] = Field(default=None, max_length=500)
+    status: str = Field(default="pending", max_length=20)
+    sent_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: UUID = Field(foreign_key="user.id")
+
+    strategy: Optional["Strategy"] = Relationship(back_populates="signals")
+    creator: Optional["User"] = Relationship(back_populates="signals")
+
+
+class MarketData(SQLModel, table=True):
+    __tablename__ = "market_data"
+
+    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
+    symbol: str = Field(max_length=20, index=True)
+    data_type: str = Field(max_length=50)
+    timestamp: datetime = Field(index=True)
+    data: str = Field()
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_symbol_timestamp", "symbol", "timestamp"),
+        Index("idx_data_type_timestamp", "data_type", "timestamp"),
+    )

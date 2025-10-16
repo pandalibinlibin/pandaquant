@@ -2,7 +2,7 @@
 name = "app"
 version = "0.1.0"
 description = ""
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "fastapi[standard]<1.0.0,>=0.114.2",
     "python-multipart<1.0.0,>=0.0.7",
@@ -21,6 +21,28 @@ dependencies = [
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
+    "qlib>=0.0.2.dev20",
+    "backtrader>=1.9.76.123",
+    #"vnpy>=3.0.0",
+    #"talib>=0.4.25",
+    #"pandas-ta>=0.3.14b0",
+    "ta>=0.10.2",
+    "technical>=1.0.0",
+    #"ta-lib>=0.4.25",
+    "tushare>=1.2.89",
+    "akshare>=1.9.0",
+    "yfinance>=0.2.18",
+    "influxdb-client>=1.36.0",
+    "redis>=4.5.0",
+    "apscheduler>=3.10.4",
+    "celery>=5.3.0",
+    "rq>=1.15.0",
+    "wechatpy>=1.8.18",
+    "requests>=2.31.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    
 ]
 
 [tool.uv]
