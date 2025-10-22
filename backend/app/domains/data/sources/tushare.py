@@ -256,3 +256,18 @@ class TushareDataSource(DataSource):
         except Exception as e:
             logger.error(f"Error fetching concept data: {e}")
             return pd.DataFrame()
+
+    async def normalize_data(self, data: pd.DataFrame) -> pd.DataFrame:
+        if data.empty:
+            return data
+
+        time_columns = ["trade_date", "trade_time", "date", "period"]
+        for col in time_columns:
+            if col in data.columns:
+                data = data.rename(columns={col: "timestamp"})
+                break
+
+        if "timestamp" in data.columns:
+            data["timestamp"] = pd.to_datetime(data["timestamp"])
+
+        return data
