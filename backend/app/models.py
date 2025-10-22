@@ -198,19 +198,3 @@ class Signal(SQLModel, table=True):
 
     strategy: Optional["Strategy"] = Relationship(back_populates="signals")
     creator: Optional["User"] = Relationship(back_populates="signals")
-
-
-class MarketData(SQLModel, table=True):
-    __tablename__ = "market_data"
-
-    id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
-    symbol: str = Field(max_length=20, index=True)
-    data_type: str = Field(max_length=50)
-    timestamp: datetime = Field(index=True)
-    data: str = Field()
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    __table_args__ = (
-        Index("idx_symbol_timestamp", "symbol", "timestamp"),
-        Index("idx_data_type_timestamp", "data_type", "timestamp"),
-    )
