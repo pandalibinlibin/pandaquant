@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 import pandas as pd
 from .base import DataSource, DataSourceStatus
 from .tushare import TushareDataSource
+from .akshare import AkshareDataSource
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,9 +21,8 @@ class DataSourceFactory:
         )
         self.sources.append(tushare_source)
 
-        # can add other data sources here like akshare, etc.
-        # akshare_source = AkshareDatSource(priority=2)
-        # self.sources.append(akshare_source)
+        akshare_source = AkshareDataSource(priority=2)
+        self.sources.append(akshare_source)
 
         logger.info(f"Initialized {len(self.sources)} data sources")
 

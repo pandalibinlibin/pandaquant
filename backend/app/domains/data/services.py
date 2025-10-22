@@ -7,8 +7,6 @@ from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models import MarketData
-from app.core.db import get_db
 from app.domains.data.sources.factory import DataSourceFactory, data_source_factory
 
 
