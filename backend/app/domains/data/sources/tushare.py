@@ -257,7 +257,9 @@ class TushareDataSource(DataSource):
             logger.error(f"Error fetching concept data: {e}")
             return pd.DataFrame()
 
-    async def normalize_data(self, data: pd.DataFrame) -> pd.DataFrame:
+    async def normalize_data(
+        self, data: pd.DataFrame, data_type: str = "daily"
+    ) -> pd.DataFrame:
         if data.empty:
             return data
 
@@ -269,5 +271,32 @@ class TushareDataSource(DataSource):
 
         if "timestamp" in data.columns:
             data["timestamp"] = pd.to_datetime(data["timestamp"])
+
+        standard_fields = self.get_standard_fields(data_type)
+        for field in standard_fields:
+            if field not in data.columns:
+                if field == "timestamp":
+                    continue
+                elif field in ["open", "high", "low", "close", "volume", "amount"]:
+                    data[field] = -999999.0
+                elif field in [
+                    "pct_chg",
+                    "change",
+                    "turnover",
+                    "pe",
+                    "pb",
+                    "ps",
+                    "pcf",
+                ]:
+                    data[field] = -999999.0
+                elif field in [
+                    "market_cap",
+                    "circulating_market_cap",
+                    "total_shares",
+                    "float_shares",
+                ]:
+                    data[field] = -999999.0
+                else:
+                    data[field] = None
 
         return data

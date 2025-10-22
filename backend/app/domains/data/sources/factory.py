@@ -70,7 +70,7 @@ class DataSourceFactory:
                 data = await source.fetch_data(data_type, **kwargs)
 
                 if not data.empty:
-                    data = await source.normalize_data(data)
+                    data = await source.normalize_data(data, data_type)
                     logger.info(f"Successfully fetched data from {source.name}")
                     source.record_success()
                     return data
