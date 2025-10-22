@@ -56,3 +56,7 @@ class DataSource(ABC):
         self.error_count = 0
         self.last_check = datetime.now()
         self.status = DataSourceStatus.ACTIVE
+
+    @abstractmethod
+    async def normalize_data(self, data: pd.DataFrame) -> pd.DataFrame:
+        pass
