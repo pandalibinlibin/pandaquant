@@ -46,3 +46,42 @@ class DataService:
         except Exception as e:
             print(f"Error fetching data for {symbol}: {e}")
             return pd.DataFrame()
+
+    async def store_data_to_influxdb(
+        self,
+        measurement: str,
+        data: pd.DataFrame,
+        tags: Dict[str, str] = None,
+        fields: List[str] = None,
+    ) -> bool:
+        try:
+            points = []
+            for _, row in data.iterrows():
+                point = Point(measurement)
+
+                if tags:
+                    for key, value in tags.items():
+                        point = point.tag(key, value)
+
+                if fields:
+                    for field in fields:
+                        if field in row and pd.notna(row[field]):
+                            point = point.field(field, row[field])
+
+                if "timestamp" in row and pd.notna(row["timestamp"]):
+                    point = point.time(row["timestamp"])
+
+                points.append(point)
+
+            if points:
+                self.write_api.write(
+                    bucket=self.influxdb_bucket,
+                    org=self.influxdb_org,
+                    record=points,
+                )
+                return True
+
+            return False
+        except Exception as e:
+            print(f"Error storing data to InfluxDB: {e}")
+            return False
