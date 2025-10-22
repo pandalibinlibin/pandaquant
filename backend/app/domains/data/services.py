@@ -85,3 +85,47 @@ class DataService:
         except Exception as e:
             print(f"Error storing data to InfluxDB: {e}")
             return False
+
+    async def get_data_from_influxdb(
+        self,
+        measurement: str,
+        start_date: str,
+        end_date: str,
+        tags: Dict[str, str] = None,
+        fields: List[str] = None,
+    ) -> pd.DataFrame:
+        try:
+            query = f"""
+            from(bucket: "{self.influxdb_bucket}")
+            |> range(start: {start_date}, stop: {end_date})
+            |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+            """
+
+            if tags:
+                for key, value in tags.items():
+                    query += f'|> filter(fn: (r) => r["{key}"] == "{value}")\n'
+
+            if fields:
+                field_conditions = []
+                for field in fields:
+                    field_conditions.append(f'r["_field"] == "{field}"')
+                field_filter = (
+                    "|> filter(fn: (r) => " + " or ".join(field_conditions) + ")\n"
+                )
+                query += field_filter
+
+            query += '|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")\n'
+
+            result = self.query_api.query_data_frame(query=query, org=self.influxdb_org)
+
+            if result.empty:
+                return pd.DataFrame()
+
+            result = result.rename(columns={"_time": "timestamp"})
+            result = result.sort_values("timestamp")
+
+            return result
+
+        except Exception as e:
+            print(f"Error getting data from InfluxDB: {e}")
+            return pd.DataFrame()
