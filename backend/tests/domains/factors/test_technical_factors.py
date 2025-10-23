@@ -1,7 +1,78 @@
 import pytest
 import pandas as pd
 import numpy as np
-from app.domains.factors.technical import MACDFactor, BollingerBandsFactor
+from app.domains.factors.technical import (
+    MACDFactor,
+    BollingerBandsFactor,
+    KDJFactor,
+    MovingAverageFactor,
+    RSIFactor,
+)
+
+
+class TestMovingAverageFactor:
+    def test_ma_initialization(self):
+        ma = MovingAverageFactor(period=20, ma_type="SMA")
+
+        assert ma.name == "MA_20_SMA"
+        assert ma.period == 20
+        assert ma.ma_type == "SMA"
+        assert "SMA Moving Average of 20 periods" in ma.description
+
+    def test_ema_initialization(self):
+        ema = MovingAverageFactor(period=20, ma_type="EMA")
+
+        assert ema.name == "MA_20_EMA"
+        assert ema.period == 20
+        assert ema.ma_type == "EMA"
+        assert "EMA Moving Average of 20 periods" in ema.description
+
+    def test_ma_qlib_integration(self):
+        ma = MovingAverageFactor(period=20, ma_type="SMA")
+
+        expression = ma.get_qlib_expression()
+        assert "Mean($close, 20)" in expression
+
+        dependencies = ma.get_qlib_dependencies()
+        assert "$close" in dependencies
+
+        params = ma.get_qlib_parameters()
+        assert params["period"] == 20
+        assert params["ma_type"] == "SMA"
+
+    def test_ema_qlib_integration(self):
+        ema = MovingAverageFactor(period=20, ma_type="EMA")
+
+        expression = ema.get_qlib_expression()
+        assert "EMA($close, 20)" in expression
+
+        dependencies = ema.get_qlib_dependencies()
+        assert "$close" in dependencies
+
+        params = ema.get_qlib_parameters()
+        assert params["period"] == 20
+        assert params["ma_type"] == "EMA"
+
+
+class TestRSIFactor:
+    def test_rsi_initialization(self):
+        rsi = RSIFactor(period=14)
+
+        assert rsi.name == "RSI_14"
+        assert rsi.period == 14
+        assert "Relative Strength Index of 14 periods" in rsi.description
+
+    def test_rsi_qlib_integration(self):
+        rsi = RSIFactor()
+
+        expression = rsi.get_qlib_expression()
+        assert "RSI($close, 14)" in expression
+
+        dependencies = rsi.get_qlib_dependencies()
+        assert "$close" in dependencies
+
+        params = rsi.get_qlib_parameters()
+        assert params["period"] == 14
 
 
 class TestMACDFactor:
@@ -50,3 +121,30 @@ class TestBollingerBandsFactor:
         params = bb.get_qlib_parameters()
         assert params["period"] == 20
         assert params["std_dev"] == 2.0
+
+
+class TestKDJFactor:
+    def test_kdj_initialization(self):
+        kdj = KDJFactor(k_period=9, d_period=3, j_period=3)
+
+        assert kdj.name == "KDJ_9_3_3"
+        assert kdj.k_period == 9
+        assert kdj.d_period == 3
+        assert kdj.j_period == 3
+        assert "KDJ Stochastic Oscillator with k=9, d=3, j=3" in kdj.description
+
+    def test_kdj_qlib_integration(self):
+        kdj = KDJFactor()
+
+        expression = kdj.get_qlib_expression()
+        assert "STOCH($high, $low, $close, 9, 3, 3)" in expression
+
+        dependencies = kdj.get_qlib_dependencies()
+        assert "$high" in dependencies
+        assert "$low" in dependencies
+        assert "$close" in dependencies
+
+        params = kdj.get_qlib_parameters()
+        assert params["k_period"] == 9
+        assert params["d_period"] == 3
+        assert params["j_period"] == 3

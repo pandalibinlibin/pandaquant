@@ -228,3 +228,64 @@ class BollingerBandsFactor(TechnicalFactor):
 
     def get_report_reference(self) -> Optional[str]:
         return "Bollinger Bands技术指标, 用于波动性分析和超买超卖判断"
+
+
+class KDJFactor(TechnicalFactor):
+    def __init__(self, k_period: int = 9, d_period: int = 3, j_period: int = 3):
+        super().__init__(
+            name=f"KDJ_{k_period}_{d_period}_{j_period}",
+            description=f"KDJ Stochastic Oscillator with k={k_period}, d={d_period}, j={j_period}",
+            parameters={
+                "k_period": k_period,
+                "d_period": d_period,
+                "j_period": j_period,
+            },
+        )
+
+        self.k_period = k_period
+        self.d_period = d_period
+        self.j_period = j_period
+
+    async def calculate(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        if not self.validate_data(data):
+            raise ValueError(f"Invalid data for {self.name}, missing required fields")
+
+        try:
+            result = data.copy()
+
+            k_value, d_value = talib.STOCH(
+                data["high"],
+                data["low"],
+                data["close"],
+                fastk_period=self.k_period,
+                slowk_period=self.d_period,
+                slowd_period=self.d_period,
+            )
+
+            j_value = 3 * k_value - 2 * d_value
+
+            result[f"kdj_k_{self.k_period}"] = k_value
+            result[f"kdj_d_{self.d_period}"] = d_value
+            result[f"kdj_j_{self.j_period}"] = j_value
+
+            self.record_success()
+            return result
+        except Exception as e:
+            self.record_error()
+            raise e
+
+    def get_qlib_expression(self) -> str:
+        return f"STOCH($high, $low, $close, {self.k_period}, {self.d_period}, {self.d_period})"
+
+    def get_qlib_dependencies(self) -> List[str]:
+        return ["$high", "$low", "$close"]
+
+    def get_qlib_parameters(self) -> Dict[str, Any]:
+        return {
+            "k_period": self.k_period,
+            "d_period": self.d_period,
+            "j_period": self.j_period,
+        }
+
+    def get_report_reference(self) -> Optional[str]:
+        return "KDJ随机指标, 用于超买超卖判断和趋势分析"
