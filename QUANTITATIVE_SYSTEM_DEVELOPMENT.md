@@ -115,6 +115,7 @@
 - `backend/app/domains/factors/base.py` - 因子抽象基类
 - `backend/app/domains/factors/technical.py` - 技术指标因子实现
 - `backend/app/domains/factors/services.py` - 因子服务类
+- `backend/tests/domains/factors/test_technical_factors.py` - 因子测试
 
 #### 核心功能
 
@@ -128,9 +129,9 @@
 
 - **技术指标因子**：基于TA-Lib实现
 
-  - 移动平均线 (SMA, EMA)
+  - 移动平均线 (SMA, EMA) ✅
   - 相对强弱指数 (RSI) ✅
-  - MACD指标 (计划中)
+  - MACD指标 ✅
   - 布林带 (Bollinger Bands) (计划中)
   - 更多技术指标 (计划中)
 

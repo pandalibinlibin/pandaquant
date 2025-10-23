@@ -113,3 +113,64 @@ class RSIFactor(TechnicalFactor):
 
     def get_report_reference(self) -> Optional[str]:
         return None
+
+
+class MACDFactor(TechnicalFactor):
+    def __init__(
+        self, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9
+    ):
+        super().__init__(
+            name=f"MACD_{fast_period}_{slow_period}_{signal_period}",
+            description=f"MACD with fast={fast_period}, slow={slow_period}, signal={signal_period}",
+            parameters={
+                "fast_period": fast_period,
+                "slow_period": slow_period,
+                "signal_period": signal_period,
+            },
+        )
+
+        self.fast_period = fast_period
+        self.slow_period = slow_period
+        self.signal_period = signal_period
+
+    async def calculate(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        if not self.validate_data(data):
+            raise ValueError(f"Invalid data for {self.name}, missing required fields")
+
+        try:
+            result = data.copy()
+
+            macd_line, signal_line, histogram = talib.MACD(
+                data["close"],
+                fastperiod=self.fast_period,
+                slowperiod=self.slow_period,
+                signalperiod=self.signal_period,
+            )
+
+            result[f"macd_{self.fast_period}_{self.slow_period}"] = macd_line
+            result[f"macd_signal_{self.signal_period}"] = signal_line
+            result[f"macd_histogram"] = histogram
+
+            self.record_success()
+
+            return result
+
+        except Exception as e:
+            self.record_error()
+            raise e
+
+    def get_qlib_expression(self) -> str:
+        return f"MACD($close, {self.fast_period}, {self.slow_period}, {self.signal_period})"
+
+    def get_qlib_dependencies(self) -> List[str]:
+        return ["$close"]
+
+    def get_qlib_parameters(self) -> Dict[str, Any]:
+        return {
+            "fast_period": self.fast_period,
+            "slow_period": self.slow_period,
+            "signal_period": self.signal_period,
+        }
+
+    def get_report_reference(self) -> Optional[str]:
+        return "MACD技术指标, 用于趋势分析和买卖信号识别"
