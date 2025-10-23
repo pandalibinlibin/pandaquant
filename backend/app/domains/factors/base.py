@@ -94,11 +94,7 @@ class Factor(ABC):
         pass
 
     @abstractmethod
-    def get_factor_formula(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_implementation_notes(self) -> str:
+    def get_qlib_parameters(self) -> Dict[str, Any]:
         pass
 
     def is_report_factor(self) -> bool:

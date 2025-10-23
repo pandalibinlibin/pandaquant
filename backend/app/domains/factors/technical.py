@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import talib
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from .base import Factor, FactorType
 
 
@@ -60,3 +60,19 @@ class MovingAverageFactor(TechnicalFactor):
         except Exception as e:
             self.record_error()
             raise e
+
+    def get_qlib_expression(self) -> str:
+        if self.ma_type == "SMA":
+            return f"Mean($close, {self.period})"
+        elif self.ma_type == "EMA":
+            return f"EMA($close, {self.period})"
+        return ""
+
+    def get_qlib_dependencies(self) -> List[str]:
+        return ["$close"]
+
+    def get_report_reference(self) -> Optional[str]:
+        return None
+
+    def get_qlib_parameters(self) -> Dict[str, Any]:
+        return {"period": self.period, "ma_type": self.ma_type}
