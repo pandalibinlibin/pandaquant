@@ -116,6 +116,8 @@
 - `backend/app/domains/factors/technical.py` - 技术指标因子实现
 - `backend/app/domains/factors/services.py` - 因子服务类
 - `backend/tests/domains/factors/test_technical_factors.py` - 技术因子测试（12个测试用例）
+- `backend/tests/domains/factors/test_fundamental_factors.py` - 基本面因子测试（4个测试用例）
+- `backend/tests/domains/factors/test_report_factors.py` - 报告因子测试（4个测试用例）
 
 #### 核心功能
 
@@ -135,6 +137,16 @@
   - 布林带 (Bollinger Bands) ✅ - 2个测试用例
   - KDJ随机指标 ✅ - 2个测试用例
   - 更多技术指标 (计划中)
+
+- **基本面因子**：财务数据相关因子
+
+  - 财务比率因子 (PE, PB, ROE, ROA) ✅ - 4个测试用例
+  - 更多基本面因子 (计划中)
+
+- **报告因子**：金融工程报告因子
+
+  - 动量因子 ✅ - 4个测试用例
+  - 更多报告因子 (计划中)
 
 - **自定义因子**：支持配置化因子计算
 - **Qlib集成**：专业因子挖掘和研究
