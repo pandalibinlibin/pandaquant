@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from app.domains.factors.technical import MACDFactor, MovingAverageFactor, RSIFactor
+from app.domains.factors.technical import MACDFactor, BollingerBandsFactor
 
 
 class TestMACDFactor:
@@ -27,3 +27,26 @@ class TestMACDFactor:
         assert params["fast_period"] == 12
         assert params["slow_period"] == 26
         assert params["signal_period"] == 9
+
+
+class TestBollingerBandsFactor:
+    def test_bollinger_bands_initialization(self):
+        bb = BollingerBandsFactor(period=20, std_dev=2.0)
+
+        assert bb.name == "BB_20_2.0"
+        assert bb.period == 20
+        assert bb.std_dev == 2.0
+        assert "Bollinger Bands with period=20, std_dev=2.0" in bb.description
+
+    def test_bollinger_bands_qlib_integration(self):
+        bb = BollingerBandsFactor()
+
+        expression = bb.get_qlib_expression()
+        assert "BBANDS($close, 20, 2.0)" in expression
+
+        dependencies = bb.get_qlib_dependencies()
+        assert "$close" in dependencies
+
+        params = bb.get_qlib_parameters()
+        assert params["period"] == 20
+        assert params["std_dev"] == 2.0

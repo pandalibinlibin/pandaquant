@@ -132,7 +132,7 @@
   - 移动平均线 (SMA, EMA) ✅
   - 相对强弱指数 (RSI) ✅
   - MACD指标 ✅
-  - 布林带 (Bollinger Bands) (计划中)
+  - 布林带 (Bollinger Bands) ✅
   - 更多技术指标 (计划中)
 
 - **自定义因子**：支持配置化因子计算

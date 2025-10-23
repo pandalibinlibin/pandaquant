@@ -174,3 +174,57 @@ class MACDFactor(TechnicalFactor):
 
     def get_report_reference(self) -> Optional[str]:
         return "MACD技术指标, 用于趋势分析和买卖信号识别"
+
+
+class BollingerBandsFactor(TechnicalFactor):
+    def __init__(self, period: int = 20, std_dev: float = 2.0):
+        super().__init__(
+            name=f"BB_{period}_{std_dev}",
+            description=f"Bollinger Bands with period={period}, std_dev={std_dev}",
+            parameters={"period": period, "std_dev": std_dev},
+        )
+        self.period = period
+        self.std_dev = std_dev
+
+    async def calculate(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        if not self.validate_data(data):
+            raise ValueError(f"Invalid data for {self.name}, missing required fields")
+
+        try:
+            result = data.copy()
+
+            upper_band, middle_band, lower_band = talib.BBANDS(
+                data["close"],
+                timeperiod=self.period,
+                nbdevup=self.std_dev,
+                nbdevdn=self.std_dev,
+            )
+
+            result[f"bb_upper_{self.period}"] = upper_band
+            result[f"bb_middle_{self.period}"] = middle_band
+            result[f"bb_lower_{self.period}"] = lower_band
+
+            result[f"bb_width_{self.period}"] = (upper_band - lower_band) / middle_band
+            result[f"bb_position_{self.period}"] = (data["close"] - lower_band) / (
+                upper_band - lower_band
+            )
+
+            self.record_success()
+
+            return result
+
+        except Exception as e:
+            self.record_error()
+            raise e
+
+    def get_qlib_expression(self) -> str:
+        return f"BBANDS($close, {self.period}, {self.std_dev})"
+
+    def get_qlib_dependencies(self) -> List[str]:
+        return ["$close"]
+
+    def get_qlib_parameters(self) -> Dict[str, Any]:
+        return {"period": self.period, "std_dev": self.std_dev}
+
+    def get_report_reference(self) -> Optional[str]:
+        return "Bollinger Bands技术指标, 用于波动性分析和超买超卖判断"
