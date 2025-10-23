@@ -76,3 +76,40 @@ class MovingAverageFactor(TechnicalFactor):
 
     def get_qlib_parameters(self) -> Dict[str, Any]:
         return {"period": self.period, "ma_type": self.ma_type}
+
+
+class RSIFactor(TechnicalFactor):
+    def __init__(self, period: int = 14):
+        super().__init__(
+            name=f"RSI_{period}",
+            description=f"Relative Strength Index of {period} periods",
+            parameters={"period": period},
+        )
+        self.period = period
+
+    async def calculate(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        if not self.validate_data(data):
+            raise ValueError(f"Invalid data for {self.name}, missing required fields")
+
+        try:
+            result = data.copy()
+            result[f"rsi_{self.period}"] = talib.RSI(
+                data["close"], timeperiod=self.period
+            )
+            self.record_success()
+            return result
+        except Exception as e:
+            self.record_error()
+            raise e
+
+    def get_qlib_expression(self) -> str:
+        return f"RSI($close, {self.period})"
+
+    def get_qlib_dependencies(self) -> List[str]:
+        return ["$close"]
+
+    def get_qlib_parameters(self) -> Dict[str, Any]:
+        return {"period": self.period}
+
+    def get_report_reference(self) -> Optional[str]:
+        return None
