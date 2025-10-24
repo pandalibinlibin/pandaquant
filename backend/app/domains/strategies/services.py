@@ -11,6 +11,8 @@ from app.core.db import get_db
 from app.domains.data.services import DataService
 from app.domains.factors.services import factor_service
 import backtrader as bt
+from uuid import UUID
+from .base_strategy import BaseStrategy
 
 
 class StrategyService:
@@ -19,6 +21,46 @@ class StrategyService:
         self.data_service = DataService()
         self.factor_service = factor_service
         self.qlib_initialized = False
+
+        self.strategy_classes = {}
+
+    def register_strategy_class(self, strategy_name: str, strategy_class):
+        if not issubclass(strategy_class, BaseStrategy):
+            raise ValueError(
+                f"Strategy class must inherit from BaseStrategy, got {strategy_class}"
+            )
+
+        self.strategy_classes[strategy_name] = strategy_class
+        print(f"Registered strategy: {strategy_name} -> {strategy_class.__name__}")
+
+    def unregister_strategy_class(self, strategy_name: str):
+        if strategy_name in self.strategy_classes:
+            del self.strategy_classes[strategy_name]
+        else:
+            print(f"Strategy {strategy_name} not found")
+
+    def get_strategy_class(self, strategy_name: str):
+        if strategy_name not in self.strategy_classes:
+            available_strategies = list(self.strategy_classes.keys())
+            raise ValueError(
+                f"Strategy {strategy_name} not found. Available strategies: {available_strategies}"
+            )
+        return self.strategy_classes[strategy_name]
+
+    def list_available_strategies(self) -> List[str]:
+        return list(self.strategy_classes.keys())
+
+    def get_strategy_info(self, strategy_name: str) -> Dict[str, Any]:
+        if strategy_name not in self.strategy_classes:
+            raise ValueError(f"Strategy {strategy_name} not found")
+
+        strategy_class = self.get_strategy_class(strategy_name)
+        return {
+            "name": strategy_name,
+            "class": strategy_class.__name__,
+            "module": strategy_class.__module__,
+            "doc": strategy_class.__doc__,
+        }
 
     async def initialize_qlib(self, region: str = "cn"):
         try:
@@ -75,9 +117,9 @@ class StrategyService:
             db = next(get_db())
             existing_strategy = db.query(Strategy).filter(Strategy.name == name).first()
             if existing_strategy:
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                name = f"{name}_{timestamp}"
-                print(f"Strategy name already exists, renamed to: {name}")
+                raise ValueError(
+                    f"Strategy name {name} already exists, please use a different name"
+                )
 
             strategy = Strategy(
                 name=name,
@@ -247,7 +289,7 @@ class StrategyService:
                 for analyzer in analyzers:
                     cerebro.addanalyzer(analyzer)
 
-            strategy_class = self._get_strategy_class(strategy.strategy_type)
+            strategy_class = self.get_strategy_class(strategy.strategy_type)
             cerebro.addstrategy(strategy_class, config=json.loads(strategy.config))
 
             if symbols:
@@ -272,19 +314,6 @@ class StrategyService:
         except Exception as e:
             print(f"Error running backtest: {e}")
             return {}
-
-    def _get_strategy_class(self, strategy_type: str):
-        strategy_classes = {
-            "technical": TechnicalStrategy,
-            "qlib": QlibStrategy,
-            "factor_mining": FactorMiningStrategy,
-            "backtest": BacktestStrategy,
-        }
-
-        if strategy_type not in strategy_classes:
-            raise ValueError(f"Unsupported strategy type: {strategy_type}")
-
-        return strategy_classes[strategy_type]
 
     async def _get_backtest_data(
         self,
