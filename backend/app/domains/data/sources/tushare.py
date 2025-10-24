@@ -258,7 +258,7 @@ class TushareDataSource(DataSource):
             return pd.DataFrame()
 
     async def normalize_data(
-        self, data: pd.DataFrame, data_type: str = "daily"
+        self, data: pd.DataFrame, symbol: str, data_type: str = "daily"
     ) -> pd.DataFrame:
         if data.empty:
             return data
@@ -277,6 +277,8 @@ class TushareDataSource(DataSource):
             if field not in data.columns:
                 if field == "timestamp":
                     continue
+                elif field == "symbol":
+                    data[field] = symbol
                 elif field in ["open", "high", "low", "close", "volume", "amount"]:
                     data[field] = -999999.0
                 elif field in [

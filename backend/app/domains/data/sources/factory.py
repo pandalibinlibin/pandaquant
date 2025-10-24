@@ -48,6 +48,7 @@ class DataSourceFactory:
     async def fetch_data_with_fallback(
         self,
         data_type: str,
+        symbol: str,
         **kwargs,
     ) -> pd.DataFrame:
 
@@ -70,7 +71,7 @@ class DataSourceFactory:
                 data = await source.fetch_data(data_type, **kwargs)
 
                 if not data.empty:
-                    data = await source.normalize_data(data, data_type)
+                    data = await source.normalize_data(data, symbol, data_type)
                     logger.info(f"Successfully fetched data from {source.name}")
                     source.record_success()
                     return data

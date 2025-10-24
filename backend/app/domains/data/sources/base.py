@@ -16,6 +16,7 @@ class DataSource(ABC):
         # 行情数据 - 最大集
         "daily": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -36,6 +37,7 @@ class DataSource(ABC):
         ],
         "minute": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -52,6 +54,7 @@ class DataSource(ABC):
         ],
         "tick": [
             "timestamp",
+            "symbol",
             "price",
             "volume",
             "amount",
@@ -65,6 +68,7 @@ class DataSource(ABC):
         # 宏观数据 - 最大集
         "macro": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -76,6 +80,7 @@ class DataSource(ABC):
         ],
         "gdp": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -88,6 +93,7 @@ class DataSource(ABC):
         ],
         "cpi": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -100,6 +106,7 @@ class DataSource(ABC):
         ],
         "ppi": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -112,6 +119,7 @@ class DataSource(ABC):
         ],
         "m2": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -124,6 +132,7 @@ class DataSource(ABC):
         ],
         "interest_rate": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -137,6 +146,7 @@ class DataSource(ABC):
         # 财务数据 - 最大集
         "financial": [
             "timestamp",
+            "symbol",
             "revenue",
             "profit",
             "assets",
@@ -161,6 +171,7 @@ class DataSource(ABC):
         ],
         "balance_sheet": [
             "timestamp",
+            "symbol",
             "total_assets",
             "current_assets",
             "fixed_assets",
@@ -176,6 +187,7 @@ class DataSource(ABC):
         ],
         "income_statement": [
             "timestamp",
+            "symbol",
             "revenue",
             "gross_profit",
             "operating_profit",
@@ -190,6 +202,7 @@ class DataSource(ABC):
         ],
         "cash_flow": [
             "timestamp",
+            "symbol",
             "operating_cash_flow",
             "investing_cash_flow",
             "financing_cash_flow",
@@ -202,6 +215,7 @@ class DataSource(ABC):
         # 行业数据 - 最大集
         "industry": [
             "timestamp",
+            "symbol",
             "industry_name",
             "industry_code",
             "market_cap",
@@ -222,6 +236,7 @@ class DataSource(ABC):
         ],
         "industry_performance": [
             "timestamp",
+            "symbol",
             "industry_name",
             "return_rate",
             "volume",
@@ -240,6 +255,7 @@ class DataSource(ABC):
         # 概念数据 - 最大集
         "concept": [
             "timestamp",
+            "symbol",
             "concept_name",
             "concept_code",
             "market_cap",
@@ -256,6 +272,7 @@ class DataSource(ABC):
         ],
         "concept_performance": [
             "timestamp",
+            "symbol",
             "concept_name",
             "return_rate",
             "volume",
@@ -274,6 +291,7 @@ class DataSource(ABC):
         # 指数数据 - 最大集
         "index": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -294,6 +312,7 @@ class DataSource(ABC):
         ],
         "index_daily": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -315,6 +334,7 @@ class DataSource(ABC):
         # 基金数据 - 最大集
         "fund": [
             "timestamp",
+            "symbol",
             "nav",
             "acc_nav",
             "pct_chg",
@@ -331,6 +351,7 @@ class DataSource(ABC):
         ],
         "fund_daily": [
             "timestamp",
+            "symbol",
             "nav",
             "acc_nav",
             "pct_chg",
@@ -348,6 +369,7 @@ class DataSource(ABC):
         # 债券数据 - 最大集
         "bond": [
             "timestamp",
+            "symbol",
             "price",
             "yield_rate",
             "volume",
@@ -365,6 +387,7 @@ class DataSource(ABC):
         ],
         "bond_daily": [
             "timestamp",
+            "symbol",
             "price",
             "yield_rate",
             "volume",
@@ -383,6 +406,7 @@ class DataSource(ABC):
         # 期货数据 - 最大集
         "futures": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -400,6 +424,7 @@ class DataSource(ABC):
         ],
         "futures_daily": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -418,6 +443,7 @@ class DataSource(ABC):
         # 期权数据 - 最大集
         "options": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -437,6 +463,7 @@ class DataSource(ABC):
         ],
         "options_daily": [
             "timestamp",
+            "symbol",
             "open",
             "high",
             "low",
@@ -457,6 +484,7 @@ class DataSource(ABC):
         # 因子数据 - 最大集
         "factor": [
             "timestamp",
+            "symbol",
             "factor_name",
             "factor_value",
             "factor_type",
@@ -472,6 +500,7 @@ class DataSource(ABC):
         ],
         "technical_factor": [
             "timestamp",
+            "symbol",
             "factor_name",
             "factor_value",
             "period",
@@ -487,6 +516,7 @@ class DataSource(ABC):
         ],
         "fundamental_factor": [
             "timestamp",
+            "symbol",
             "factor_name",
             "factor_value",
             "sector",
@@ -521,6 +551,7 @@ class DataSource(ABC):
         "backtest_result": [
             "timestamp",
             "strategy_id",
+            "symbol",
             "total_return",
             "sharpe_ratio",
             "max_drawdown",
@@ -570,6 +601,7 @@ class DataSource(ABC):
         # 通用数据 - 最大集
         "general": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -584,6 +616,7 @@ class DataSource(ABC):
         ],
         "time_series": [
             "timestamp",
+            "symbol",
             "value",
             "unit",
             "description",
@@ -645,7 +678,10 @@ class DataSource(ABC):
 
     @abstractmethod
     async def normalize_data(
-        self, data: pd.DataFrame, data_type: str = "daily"
+        self,
+        data: pd.DataFrame,
+        symbol: str,
+        data_type: str = "daily",
     ) -> pd.DataFrame:
         pass
 
