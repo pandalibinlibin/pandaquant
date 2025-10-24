@@ -114,10 +114,13 @@
 
 - `backend/app/domains/factors/base.py` - 因子抽象基类
 - `backend/app/domains/factors/technical.py` - 技术指标因子实现
+- `backend/app/domains/factors/fundamental.py` - 基本面因子实现
+- `backend/app/domains/factors/report.py` - 报告因子实现
 - `backend/app/domains/factors/services.py` - 因子服务类
 - `backend/tests/domains/factors/test_technical_factors.py` - 技术因子测试（12个测试用例）
 - `backend/tests/domains/factors/test_fundamental_factors.py` - 基本面因子测试（4个测试用例）
 - `backend/tests/domains/factors/test_report_factors.py` - 报告因子测试（4个测试用例）
+- `backend/tests/domains/factors/test_factor_service.py` - 因子服务测试（5个测试用例）
 
 #### 核心功能
 
@@ -147,6 +150,15 @@
 
   - 动量因子 ✅ - 4个测试用例
   - 更多报告因子 (计划中)
+
+- **因子服务层**：因子注册和管理
+
+  - 因子注册表 (FactorRegistry) ✅
+  - 因子服务类 (FactorService) ✅
+  - 因子计算和批量计算 ✅
+  - 因子状态管理 ✅
+  - 默认因子自动注册 ✅
+  - 全局因子服务实例 ✅
 
 - **自定义因子**：支持配置化因子计算
 - **Qlib集成**：专业因子挖掘和研究
@@ -379,11 +391,15 @@
 12. 数据层完整测试套件
 13. 全面数据标准化架构（标准字段定义、严格验证、缺失字段处理）
 14. 因子抽象层架构设计（支持技术指标、Qlib集成、金融工程报告因子）
-15. 技术指标因子实现（移动平均线、RSI相对强弱指数）
+15. 技术指标因子实现（移动平均线、RSI、MACD、布林带、KDJ）
+16. 基本面因子实现（财务比率因子）
+17. 报告因子实现（动量因子）
+18. 因子服务层完整实现（因子注册、计算、状态管理）
+19. 因子服务层测试套件（5个测试用例全部通过）
 
 ### 进行中 🔄
 
-1. 完善技术指标因子实现，添加更多TA-Lib指标
+1. 暂无进行中的任务
 
 ### 待开始 📋
 
@@ -395,21 +411,22 @@
 
 ### 短期目标（1-2周）
 
-1. 完善技术指标因子实现
-   - 添加MACD指标因子
-   - 添加布林带因子
-   - 添加KDJ指标因子
-   - 添加威廉指标因子
-2. 创建基本面因子实现
-3. 完善因子服务层，支持因子注册和管理
-4. 创建因子测试用例
+1. 策略模板系统开发
+   - 设计策略模板结构
+   - 实现模板引擎
+   - 创建常用策略模板
+2. API路由层实现
+   - 数据管理API
+   - 因子管理API
+   - 策略管理API
+   - 信号管理API
 
 ### 中期目标（3-4周）
 
 1. 完善Qlib集成支持
-2. 创建策略模板系统
-3. 完善API路由层
-4. 开始前端界面开发
+2. 开始前端界面开发
+3. 系统集成测试
+4. 性能优化
 
 ### 长期目标（1-2个月）
 

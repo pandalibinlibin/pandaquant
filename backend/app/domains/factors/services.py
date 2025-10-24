@@ -8,280 +8,132 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, Tuple
-from sqlalchemy.orm import Session
+from typing import List, Optional, Dict, Any, Tuple, Union
 from app.core.config import settings
-from app.models import Factor, MarketData
-from app.core.db import get_db
 from app.domains.data.services import DataService
-import technical.indicators as ti
+from .base import Factor, FactorType
 
 
 class FactorService:
     def __init__(self):
-        self.data_service = DataService()
+        self.factors: Dict[str, Factor] = {}
+        self.factor_types: Dict[FactorType, List[str]] = {
+            FactorType.TECHNICAL: [],
+            FactorType.FUNDAMENTAL: [],
+            FactorType.CUSTOM: [],
+            FactorType.MACRO: [],
+            FactorType.SENTIMENT: [],
+        }
 
-    async def calculate_technical_factors(
-        self, symbol: str, start_date: str, end_date: str, factors: List[str] = None
-    ) -> pd.DataFrame:
+    def register_factor(self, factor: Factor):
         try:
-            data = await self.data_service.get_data_from_influxdb(
-                symbol, start_date, end_date, "daily"
-            )
+            if factor.name in self.factors:
+                return False
 
-            if data.empty:
-                return pd.DataFrame()
-
-            data = data.sort_values("timestamp")
-
-            result = data.copy()
-
-            if factors is None:
-                factors = [
-                    "sma_5",
-                    "sma_10",
-                    "sma_20",
-                    "sma_50",
-                    "ema_5",
-                    "ema_10",
-                    "ema_20",
-                    "ema_50",
-                    "rsi_14",
-                    "macd",
-                    "bollinger_bands",
-                    "atr_14",
-                    "stoch_14",
-                    "williams_r_14",
-                ]
-
-            if "sma_5" in factors:
-                result["sma_5"] = ti.sma(data["close"], 5)
-            if "sma_10" in factors:
-                result["sma_10"] = ti.sma(data["close"], 10)
-            if "sma_20" in factors:
-                result["sma_20"] = ti.sma(data["close"], 20)
-            if "sma_50" in factors:
-                result["sma_50"] = ti.sma(data["close"], 50)
-
-            if "ema_5" in factors:
-                result["ema_5"] = ti.ema(data["close"], 5)
-            if "ema_10" in factors:
-                result["ema_10"] = ti.ema(data["close"], 10)
-            if "ema_20" in factors:
-                result["ema_20"] = ti.ema(data["close"], 20)
-            if "ema_50" in factors:
-                result["ema_50"] = ti.ema(data["close"], 50)
-
-            if "rsi_14" in factors:
-                result["rsi_14"] = ti.rsi(data["close"], 14)
-
-            if "macd" in factors:
-                macd_line, signal_line, histogram = ti.macd(data["close"])
-                result["macd_line"] = macd_line
-                result["macd_signal"] = signal_line
-                result["macd_histogram"] = histogram
-
-            if "bollinger_bands" in factors:
-                upper, middle, lower = ti.bollinger_bands(data["close"], 20, 2)
-                result["bb_upper"] = upper
-                result["bb_middle"] = middle
-                result["bb_lower"] = lower
-                result["bb_width"] = (upper - lower) / middle
-                result["bb_position"] = (data["close"] - lower) / (upper - lower)
-
-            if "atr_14" in factors:
-                result["atr_14"] = ti.atr(data["high"], data["low"], data["close"], 14)
-
-            if "stoch_14" in factors:
-                k_percent, d_percent = ti.stoch(
-                    data["high"], data["low"], data["close"], 14
-                )
-                result["stoch_k"] = k_percent
-                result["stoch_d"] = d_percent
-
-            if "williams_r_14" in factors:
-                result["williams_r"] = ti.williams_r(
-                    data["high"], data["low"], data["close"], 14
-                )
-
-            return result
-
-        except Exception as e:
-            print(f"Error calculating technical factors for {symbol}: {e}")
-            return pd.DataFrame()
-
-    async def calculate_custom_factors(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: str,
-        factor_configs: List[Dict[str, Any]],
-    ) -> pd.DataFrame:
-        try:
-            data = await self.data_service.get_data_from_influxdb(
-                symbol, start_date, end_date, "daily"
-            )
-
-            if data.empty:
-                return pd.DataFrame()
-
-            result = data.copy()
-
-            for config in factor_configs:
-                factor_name = config.get("name")
-                factor_type = config.get("type")
-                params = config.get("params", {})
-
-                if factor_type == "price_ratio":
-                    base_price = config.get("base_price", "close")
-                    target_price = config.get("target_price", "sma_20")
-                    result[f"{factor_name}"] = data[base_price] / data[target_price]
-
-                elif factor_type == "volume_ratio":
-                    base_volume = config.get("base_volume", "close")
-                    target_volume = config.get("target_volume", "sma_20_volume")
-                    result[f"{factor_name}"] = data[base_volume] / data[target_volume]
-
-                elif factor_type == "momentum":
-                    period = params.get("period", 20)
-                    result[f"{factor_name}"] = data["close"].pct_change(period)
-
-                elif factor_type == "volatility":
-                    period = config.get("period", 20)
-                    result[f"{factor_name}"] = data["close"].rolling(period).std()
-
-                elif factor_type == "custom":
-                    formula = config.get("formula")
-                    if formula:
-                        result[f"{factor_name}"] = eval(formula)
-
-            return result
-
-        except Exception as e:
-            print(f"Error calculating custom factors for {symbol}: {e}")
-            return pd.DataFrame()
-
-    async def store_factors_to_postgres(
-        self, symbol: str, factors_data: pd.DataFrame, factor_name: str, created_by: str
-    ) -> bool:
-        try:
-            db = next(get_db())
-
-            for _, row in factors_data.iterrows():
-                factor = Factor(
-                    name=factor_name,
-                    symbol=symbol,
-                    timestamp=row["timestamp"],
-                    value=float(row.get(factor_name, 0)),
-                    metadata=row.to_json(),
-                    created_by=created_by,
-                )
-                db.add(factor)
-
-            db.commit()
+            self.factors[factor.name] = factor
+            self.factor_types[factor.factor_type].append(factor.name)
             return True
-
         except Exception as e:
-            print(f"Error storing factors to PostgreSQL: {e}")
-            db.rollback()
+            print(f"Error registering factor {factor.name}: {e}")
             return False
 
-        finally:
-            db.close()
+    def get_factor(self, name: str) -> Optional[Factor]:
+        return self.factors.get(name)
 
-    async def get_factors_from_postgres(
-        self,
-        symbol: str,
-        factor_name: str,
-        start_date: str,
-        end_date: str,
+    def get_factors_by_type(self, factor_type: FactorType) -> List[Factor]:
+        factor_names = self.factor_types.get(factor_type, [])
+        return [self.factors[name] for name in factor_names if name in self.factors]
+
+    def list_factors(self) -> List[str]:
+        return list(self.factors.keys())
+
+    def unregister_factor(self, name: str) -> bool:
+        if name not in self.factors:
+            return False
+
+        factor = self.factors[name]
+        self.factor_types[factor.factor_type].remove(name)
+        del self.factors[name]
+        return True
+
+    async def calculate_factor(
+        self, factor_name: str, data: pd.DataFrame, **kwargs
     ) -> pd.DataFrame:
+        factor = self.get_factor(factor_name)
+        if not factor:
+            raise ValueError(f"Factor {factor_name} not found")
+
+        if not factor.is_available():
+            raise ValueError(f"Factor {factor_name} is not available")
+
+        if not factor.validate_data(data):
+            raise ValueError(f"Data validation failed for factor {factor_name}")
+
         try:
-            db = next(get_db())
-
-            factors = (
-                db.query(Factor)
-                .filter(
-                    Factor.symbol == symbol,
-                    Factor.name == factor_name,
-                    Factor.timestamp >= start_date,
-                    Factor.timestamp <= end_date,
-                )
-                .all()
-            )
-
-            if not factors:
-                return pd.DataFrame()
-
-            data = []
-            for factor in factors:
-                data.append(
-                    {
-                        "timestamp": factor.timestamp,
-                        "value": factor.value,
-                        "metadata": factor.metadata,
-                    }
-                )
-
-            return pd.DataFrame(data)
-
+            result = await factor.calculate(data, **kwargs)
+            factor.record_success()
+            return result
         except Exception as e:
-            print(f"Error getting factors from PostgreSQL: {e}")
-            return pd.DataFrame()
-        finally:
-            db.close()
+            factor.record_error()
+            raise e
 
-    async def calculate_and_store_factors(
-        self,
-        symbol: str,
-        start_date: str,
-        end_date: str,
-        factor_configs: List[Dict[str, Any]],
-        created_by: str,
-    ) -> bool:
-
+    async def calculate_multiple_factors(
+        self, factor_names: List[str], data: pd.DataFrame, **kwargs
+    ) -> Dict[str, pd.DataFrame]:
         results = {}
 
-        try:
-            technical_factors = await self.calculate_technical_factors(
-                symbol, start_date, end_date
+        for factor_name in factor_names:
+            try:
+                result = await self.calculate_factor(factor_name, data, **kwargs)
+                results[factor_name] = result
+            except Exception as e:
+                print(f"Error calculating factor {factor_name}: {e}")
+                results[factor_name] = pd.DataFrame()
+
+        return results
+
+    def get_factor_status(self, name: str) -> Dict[str, Any]:
+        factor = self.get_factor(name)
+        if not factor:
+            return None
+
+        return {
+            "name": factor.name,
+            "status": factor.status.value,
+            "last_calculation": factor.last_calculation,
+            "error_count": factor.error_count,
+            "is_available": factor.is_available(),
+        }
+
+    def register_default_factors(self):
+        from .technical import (
+            MovingAverageFactor,
+            RSIFactor,
+            MACDFactor,
+            BollingerBandsFactor,
+            KDJFactor,
+        )
+        from .fundamental import FinancialRatioFactor
+        from .report import MomentumFactor
+
+        self.register_factor(MovingAverageFactor(period=5, ma_type="SMA"))
+        self.register_factor(MovingAverageFactor(period=20, ma_type="SMA"))
+        self.register_factor(RSIFactor(period=14))
+        self.register_factor(
+            MACDFactor(fast_period=12, slow_period=26, signal_period=9)
+        )
+        self.register_factor(BollingerBandsFactor(20, 2.0))
+        self.register_factor(KDJFactor(9, 3, 3))
+
+        self.register_factor(FinancialRatioFactor(ratio_type="pe_ratio"))
+        self.register_factor(FinancialRatioFactor(ratio_type="pb_ratio"))
+
+        self.register_factor(
+            MomentumFactor(
+                20, "金融工程报告", "动量因子研究", "量化研究团队", "2024-01-01"
             )
+        )
 
-            if not technical_factors.empty:
-                for factor_name in technical_factors.columns:
-                    if factor_name not in [
-                        "timestamp",
-                        "open",
-                        "high",
-                        "low",
-                        "close",
-                        "volume",
-                        "amount",
-                    ]:
-                        success = await self.store_factors_to_postgres(
-                            symbol, technical_factors, factor_name, created_by
-                        )
-                        results[f"technical_{factor_name}"] = success
 
-            custom_factors = await self.calculate_custom_factors(
-                symbol, start_date, end_date, factor_configs
-            )
-
-            if not custom_factors.empty:
-                for config in factor_configs:
-                    factor_name = config.get("name")
-                    if factor_name in custom_factors.columns:
-                        success = await self.store_factors_to_postgres(
-                            symbol, custom_factors, factor_name, created_by
-                        )
-                        results[f"custom_{factor_name}"] = success
-
-            return results
-
-        except Exception as e:
-            print(f"Error calculating and storing factors for {symbol}: {e}")
-            return {"error": False}
-
-    def close(self):
-        if hasattr(self, "data_service"):
-            self.data_service.close()
+factor_service = FactorService()
+factor_service.register_default_factors()
