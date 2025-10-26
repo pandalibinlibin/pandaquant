@@ -1,440 +1,325 @@
-import asyncio
-import json
-import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any, Tuple, Union
-from sqlalchemy.orm import Session
-from app.core.config import settings
-from app.models import Backtest, Strategy
-from app.core.db import get_db
-from app.domains.data.services import DataService
-from app.domains.factors.services import factor_service
 import backtrader as bt
-from uuid import UUID
-from .base_strategy import BaseStrategy
+import json
+import os
+import importlib
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+from app.domains.strategies.base_strategy import BaseStrategy
+from app.core.logging import get_logger
+from app.core.db import get_db
+from app.models import BacktestResult
+
+logger = get_logger(__name__)
 
 
 class StrategyService:
+    """Strategy service for managing and running strategies"""
 
     def __init__(self):
-        self.data_service = DataService()
-        self.factor_service = factor_service
-        self.qlib_initialized = False
+        self.strategies: Dict[str, BaseStrategy] = {}
+        self._auto_discover_strategies()
 
-        self.strategy_classes = {}
-
-    def register_strategy_class(self, strategy_name: str, strategy_class):
-        if not issubclass(strategy_class, BaseStrategy):
-            raise ValueError(
-                f"Strategy class must inherit from BaseStrategy, got {strategy_class}"
-            )
-
-        self.strategy_classes[strategy_name] = strategy_class
-        print(f"Registered strategy: {strategy_name} -> {strategy_class.__name__}")
-
-    def unregister_strategy_class(self, strategy_name: str):
-        if strategy_name in self.strategy_classes:
-            del self.strategy_classes[strategy_name]
-        else:
-            print(f"Strategy {strategy_name} not found")
-
-    def get_strategy_class(self, strategy_name: str):
-        if strategy_name not in self.strategy_classes:
-            available_strategies = list(self.strategy_classes.keys())
-            raise ValueError(
-                f"Strategy {strategy_name} not found. Available strategies: {available_strategies}"
-            )
-        return self.strategy_classes[strategy_name]
-
-    def list_available_strategies(self) -> List[str]:
-        return list(self.strategy_classes.keys())
-
-    def get_strategy_info(self, strategy_name: str) -> Dict[str, Any]:
-        if strategy_name not in self.strategy_classes:
-            raise ValueError(f"Strategy {strategy_name} not found")
-
-        strategy_class = self.get_strategy_class(strategy_name)
-        return {
-            "name": strategy_name,
-            "class": strategy_class.__name__,
-            "module": strategy_class.__module__,
-            "doc": strategy_class.__doc__,
-        }
-
-    async def initialize_qlib(self, region: str = "cn"):
+    def _auto_discover_strategies(self):
+        """Discover and register strategy classes"""
         try:
-            import qlib
-            from qlib.config import REG_CN, REG_US
-            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
 
-            region_config = {
-                "cn": {"region": REG_CN, "data_name": "cn_data"},
-                "us": {"region": REG_US, "data_name": "us_data"},
+            for filename in os.listdir(current_dir):
+                if filename.endswith("_strategy.py") and filename != "__init__.py":
+                    strategy_name = filename[:-3]
+
+                    try:
+
+                        module_name = f"app.domains.strategies.{strategy_name}"
+                        module = importlib.import_module(module_name)
+
+                        # 查找策略类
+                        for attr_name in dir(module):
+                            attr = getattr(module, attr_name)
+                            if (
+                                isinstance(attr, type)
+                                and issubclass(attr, BaseStrategy)
+                                and attr != BaseStrategy
+                            ):
+
+                                strategy_instance = attr()
+                                self.strategies[strategy_name] = strategy_instance
+                                logger.info(
+                                    f"Discovered and registered strategy: {strategy_name}"
+                                )
+                                break
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error discovering and registering strategy {strategy_name}: {e}"
+                        )
+                        continue
+        except Exception as e:
+            logger.error(f"Error discovering and registering strategies: {e}")
+
+    def get_strategy(self, strategy_name: str) -> Optional[BaseStrategy]:
+        """Get strategy by name"""
+        return self.strategies.get(strategy_name)
+
+    def list_strategies(self) -> List[str]:
+        """List all available strategies"""
+        return list(self.strategies.keys())
+
+    def register_strategy(self, name: str, strategy: BaseStrategy):
+        """Register a new strategy"""
+        self.strategies[name] = strategy
+        logger.info(f"Registered strategy: {name}")
+
+    def unregister_strategy(self, name: str) -> bool:
+        """Unregister a strategy"""
+        if name in self.strategies:
+            del self.strategies[name]
+            logger.info(f"Unregistered strategy: {name}")
+            return True
+        return False
+
+    def _add_default_analyzers(self, cerebro):
+        """Add comprehensive default analyzers"""
+        # Basic analyzers
+        cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
+        cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
+
+        # Time-based analyzers
+        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="timereturn")
+        cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name="timedrawdown")
+
+        # Risk analyzers
+        cerebro.addanalyzer(
+            bt.analyzers.VWR, _name="vwr"
+        )  # Variability-Weighted Return
+        cerebro.addanalyzer(bt.analyzers.Calmar, _name="calmar")  # Calmar Ratio
+        cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")  # System Quality Number
+
+        # Trading analyzers
+        cerebro.addanalyzer(bt.analyzers.GrossLeverage, _name="grossleverage")
+        cerebro.addanalyzer(bt.analyzers.PositionsValue, _name="positionsvalue")
+        cerebro.addanalyzer(bt.analyzers.PyFolio, _name="pyfolio")
+
+        # Statistical analyzers
+        cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name="annualreturn")
+        cerebro.addanalyzer(bt.analyzers.MonthlyReturn, _name="monthlyreturn")
+        cerebro.addanalyzer(bt.analyzers.DailyReturn, _name="dailyreturn")
+
+        # Volatility analyzers
+        cerebro.addanalyzer(bt.analyzers.Volatility, _name="volatility")
+        cerebro.addanalyzer(bt.analyzers.SharpeRatio_A, _name="sharpe_a")
+
+        # Drawdown analyzers
+        cerebro.addanalyzer(bt.analyzers.DrawDown_Old, _name="drawdown_old")
+        cerebro.addanalyzer(bt.analyzers.DrawDown_New, _name="drawdown_new")
+
+        # Trade statistics analyzers
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades_detailed")
+        cerebro.addanalyzer(bt.analyzers.Transactions, _name="transactions")
+        cerebro.addanalyzer(bt.analyzers.LogReturns, _name="logreturns")
+
+        logger.info("Added comprehensive default analyzers")
+
+    def _analyze_backtest_results(
+        self,
+        strategy_instance,
+        strategy_name: str,
+        symbol: str,
+        start_date: str,
+        end_date: str,
+        initial_capital: float,
+    ) -> Dict[str, Any]:
+        """Analyze backtest results from analyzers"""
+        try:
+            # Get analyzer results
+            returns_analyzer = strategy_instance.analyzers.returns.get_analysis()
+            sharpe_analyzer = strategy_instance.analyzers.sharpe.get_analysis()
+            drawdown_analyzer = strategy_instance.analyzers.drawdown.get_analysis()
+            trades_analyzer = strategy_instance.analyzers.trades.get_analysis()
+
+            # Calculate final value and total return
+            final_value = strategy_instance.broker.getvalue()
+            total_return = (final_value - initial_capital) / initial_capital
+
+            # Build comprehensive result
+            result = {
+                "strategy_name": strategy_name,
+                "symbol": symbol,
+                "start_date": start_date,
+                "end_date": end_date,
+                "initial_capital": initial_capital,
+                "final_value": final_value,
+                "total_return": total_return,
+                "max_drawdown": drawdown_analyzer.get("max", {}).get("drawdown", 0),
+                "sharpe_ratio": sharpe_analyzer.get("sharperatio", 0),
+                "total_trades": trades_analyzer.get("total", {}).get("total", 0),
+                "winning_trades": trades_analyzer.get("won", {}).get("total", 0),
+                "losing_trades": trades_analyzer.get("lost", {}).get("total", 0),
+                "win_rate": self._calculate_win_rate(trades_analyzer),
+                "analyzer_results": self._extract_all_analyzer_results(
+                    strategy_instance
+                ),
             }
 
-            if region not in region_config:
-                raise ValueError(
-                    f"Unsupported region: {region}. Supported regions: {list(region_config.keys())}"
-                )
+            return result
 
-            config = region_config[region]
-            qlib_data_path = os.path.expanduser(
-                f"~/.qlib/qlib_data/{config['data_name']}"
-            )
-
-            if not os.path.exists(qlib_data_path):
-                print(
-                    f"Qlib {region} data not fuond. Downloading data automatically..."
-                )
-                try:
-                    qlib.run.get_data(config["region"])
-                    print(f"Qlib {region} data downloaded successfully.")
-
-                except Exception as downlaod_error:
-                    print(f"Error downloading Qlib {region} data: {downlaod_error}")
-                    self.qlib_initialized = False
-                    return False
-
-            qlib.init(provider_uri=qlib_data_path, region=config["region"])
-            self.qlib_initialized = True
-            print(f"Qlib initialized successfully for {region} region.")
-            return True
         except Exception as e:
-            print(f"error initializing Qlib: {e}")
-            self.qlib_initialized = False
-            return False
+            logger.error(f"Failed to analyze backtest results: {e}")
+            # Return basic result on error
+            return {
+                "strategy_name": strategy_name,
+                "symbol": symbol,
+                "start_date": start_date,
+                "end_date": end_date,
+                "initial_capital": initial_capital,
+                "final_value": initial_capital,
+                "total_return": 0.0,
+                "max_drawdown": 0.0,
+                "sharpe_ratio": 0.0,
+                "total_trades": 0,
+                "winning_trades": 0,
+                "losing_trades": 0,
+                "win_rate": 0.0,
+                "analyzer_results": {},
+            }
 
-    async def create_strategy(
-        self,
-        name: str,
-        description: str,
-        strategy_type: str,
-        config: Dict[str, Any],
-        created_by: str,
-    ) -> Optional[Strategy]:
+    def _calculate_win_rate(self, trades_analyzer: Dict[str, Any]) -> float:
+        """Calculate win rate from trades analyzer"""
+        total_trades = trades_analyzer.get("total", {}).get("total", 0)
+        winning_trades = trades_analyzer.get("won", {}).get("total", 0)
+        return winning_trades / max(total_trades, 1)
+
+    def _extract_all_analyzer_results(self, strategy_instance) -> Dict[str, Any]:
+        """Extract results from all analyzers"""
+        analyzer_results = {}
+        for analyzer_name in strategy_instance.analyzers._analyzers:
+            try:
+                analyzer = strategy_instance.analyzers._analyzers[analyzer_name]
+                analyzer_results[analyzer_name] = analyzer.get_analysis()
+            except Exception as e:
+                logger.warning(
+                    f"Failed to extract results from analyzer {analyzer_name}: {e}"
+                )
+                continue
+        return analyzer_results
+
+    async def _save_backtest_result(self, result: Dict[str, Any], created_by: str):
+        """Save backtest result to database"""
         try:
             db = next(get_db())
-            existing_strategy = db.query(Strategy).filter(Strategy.name == name).first()
-            if existing_strategy:
-                raise ValueError(
-                    f"Strategy name {name} already exists, please use a different name"
-                )
 
-            strategy = Strategy(
-                name=name,
-                description=description,
-                strategy_type=strategy_type,
-                config=json.dumps(config),
+            # Create backtest result record
+            backtest_result = BacktestResult(
+                strategy_name=result["strategy_name"],
+                symbol=result["symbol"],
+                start_date=result["start_date"],
+                end_date=result["end_date"],
+                initial_capital=result["initial_capital"],
+                final_value=result["final_value"],
+                total_return=result["total_return"],
+                max_drawdown=result["max_drawdown"],
+                sharpe_ratio=result["sharpe_ratio"],
+                total_trades=result["total_trades"],
+                winning_trades=result["winning_trades"],
+                losing_trades=result["losing_trades"],
+                win_rate=result["win_rate"],
                 created_by=created_by,
+                created_at=datetime.now(),
+                result_data=json.dumps(result, indent=2),
             )
 
-            db.add(strategy)
+            db.add(backtest_result)
             db.commit()
-            db.refresh(strategy)
+            db.refresh(backtest_result)
 
-            return strategy
-
-        except Exception as e:
-            print(f"Error creating strategy: {e}")
-            db.rollback()
-            return None
-        finally:
-            db.close()
-
-    async def get_strategy(
-        self,
-        strategy_id: str = None,
-        name: str = None,
-    ) -> Optional[Strategy]:
-        try:
-            db = next(get_db())
-
-            if strategy_id:
-                strategy = db.query(Strategy).filter(Strategy.id == strategy_id).first()
-            elif name:
-                strategy = db.query(Strategy).filter(Strategy.name == name).first()
-            else:
-                raise ValueError("Either strategy_id or name must be provided")
-
-            return strategy
-        except Exception as e:
-            print(f"Error getting strategy: {e}")
-            return None
-        finally:
-            db.close()
-
-    async def list_strategies(
-        self,
-        created_by: str = None,
-        strategy_type: str = None,
-        status: str = None,
-    ) -> List[Strategy]:
-
-        try:
-            db = next(get_db())
-            query = db.query(Strategy)
-
-            if created_by:
-                query = query.filter(Strategy.created_by == created_by)
-            if strategy_type:
-                query = query.filter(Strategy.strategy_type == strategy_type)
-            if status:
-                query = query.filter(Strategy.status == status)
-
-            strategies = query.all()
-            return strategies
+            logger.info(
+                f"Backtest result saved to database with ID: {backtest_result.id}"
+            )
 
         except Exception as e:
-            print(f"Error listing strategies: {e}")
-            return []
-        finally:
-            db.close()
-
-    async def update_strategy(
-        self,
-        strategy_id: str,
-        name: str = None,
-        description: str = None,
-        config: Dict[str, Any] = None,
-        status: str = None,
-    ) -> bool:
-        try:
-            db = next(get_db())
-            strategy = db.query(Strategy).filter(Strategy.id == strategy_id).first()
-
-            if not strategy:
-                return False
-
-            if name:
-                strategy.name = name
-            if description:
-                strategy.description = description
-            if config:
-                strategy.config = json.dumps(config)
-            if status:
-                strategy.status = status
-
-            strategy.updated_at = datetime.utcnow()
-
-            db.commit()
-            return True
-
-        except Exception as e:
-            print(f"Error updating strategy: {e}")
-            db.rollback()
-            return False
-
-        finally:
-            db.close()
-
-    async def delete_strategy(
-        self,
-        strategy_id: str,
-    ) -> bool:
-        try:
-            db = next(get_db())
-            strategy = db.query(Strategy).filter(Strategy.id == strategy_id).first()
-
-            if not strategy:
-                return False
-
-            db.delete(strategy)
-            db.commit()
-            return True
-        except Exception as e:
-            print(f"Error deleting strategy: {e}")
-            db.rollback()
-            return False
-        finally:
-            db.close()
+            logger.error(f"Failed to save backtest result to database: {e}")
+            raise
 
     async def run_backtest(
         self,
-        strategy_id: str,
+        strategy_name: str,
+        symbol: str,
         start_date: str,
         end_date: str,
-        created_by: str,
         initial_capital: float = 1000000.0,
-        symbols: List[str] = None,
-        commission: float = 0.0003,
-        slippage: float = 0.001,
-        margin: float = 1.0,
-        leverage: float = 1.0,
-        min_commission: float = 5.0,
-        max_commission: float = 50.0,
-        analyzers: List[str] = None,
+        created_by: str = "system",
+        commission: float = 0.0003,  # 0.03% commission (A股标准)
+        min_commission: float = 5.0,  # Minimum commission 5元
+        slippage: float = 0.001,  # 0.1% slippage (A股流动性较好)
+        **kwargs,
     ) -> Dict[str, Any]:
-        try:
-            strategy = await self.get_strategy(strategy_id)
-            if not strategy:
-                raise ValueError(f"Strategy not found: {strategy_id}")
+        """Run backtest for a strategy (optimized for Chinese A-share market)"""
+        strategy = self.get_strategy(strategy_name)
+        if not strategy:
+            raise ValueError(f"Strategy {strategy_name} not found")
 
+        try:
+            # Create backtest engine
             cerebro = bt.Cerebro()
 
+            # Add strategy
+            cerebro.addstrategy(strategy)
+
+            # Set broker parameters for Chinese A-share market
             cerebro.broker.setcash(initial_capital)
 
-            cerebro.broker.setcommission(commission=commission)
+            # Set commission for A-share market (0.03% + 5元最低佣金)
+            cerebro.broker.setcommission(
+                commission=commission,
+                mult=1.0,  # 无杠杆
+                commtype=bt.CommInfoBase.COMM_PERC,  # 百分比佣金
+                stocklike=True,  # 股票类佣金
+            )
 
-            if slippage > 0:
-                cerebro.broker.setslippage(slippage=slippage)
+            # Set slippage for A-share market
+            cerebro.broker.set_slippage_perc(slippage)
 
-            cerebro.broker.set_margin(margin)
-            cerebro.broker.set_leverage(leverage)
+            # A股市场特点设置
+            cerebro.broker.set_shortcash(False)  # A股不允许做空
+            cerebro.broker.set_checksubmit(True)  # 启用提交检查
 
-            cerebro.broker.set_min_commission(min_commission)
-            cerebro.broker.set_max_commission(max_commission)
+            # Set position sizing (A股100股为1手)
+            cerebro.addsizer(bt.sizers.FixedSize, stake=100)
 
-            if analyzers:
-                for analyzer in analyzers:
-                    cerebro.addanalyzer(analyzer)
+            # Add comprehensive analyzers
+            self._add_default_analyzers(cerebro)
 
-            strategy_class = self.get_strategy_class(strategy.strategy_type)
-            cerebro.addstrategy(strategy_class, config=json.loads(strategy.config))
-
-            if symbols:
-                for symbol in symbols:
-                    data = await self._get_backtest_data(
-                        symbol, start_date, end_date, data_type="daily"
-                    )
-                    if not data.empty:
-                        datafeed = bt.feeds.PandasData(dataname=data)
-                        cerebro.adddata(datafeed)
-
+            # Run backtest
+            logger.info(
+                f"Starting A-share backtest for {strategy_name} with commission={commission}, min_commission={min_commission}, slippage={slippage}"
+            )
             results = cerebro.run()
 
-            analysis = self._analyze_backtest_results(cerebro, results)
-
-            await self._save_backtest_result(
-                strategy_id, analysis, start_date, end_date, created_by
+            # Analyze results
+            result = self._analyze_backtest_results(
+                results[0], strategy_name, symbol, start_date, end_date, initial_capital
             )
 
-            return analysis
+            # Add A-share specific parameters to result
+            result["commission"] = commission
+            result["min_commission"] = min_commission
+            result["slippage"] = slippage
+            result["market_type"] = "A-share"
+            result["leverage"] = 1.0  # A股无杠杆
+            result["short_selling"] = False  # A股不允许做空
+
+            # Save backtest result to database
+            await self._save_backtest_result(result, created_by)
+
+            logger.info(f"A-share backtest completed for {strategy_name}")
+            return result
 
         except Exception as e:
-            print(f"Error running backtest: {e}")
-            return {}
+            logger.error(f"Backtest failed for {strategy_name}: {e}")
+            raise
 
-    async def _get_backtest_data(
-        self,
-        symbol: str,
-        start_date: str = None,
-        end_date: str = None,
-        data_type: str = "daily",
-    ) -> pd.DataFrame:
-        try:
-            if not symbol:
-                raise ValueError(f"Symbol is required for {data_type} data")
 
-            data = await self.data_service.get_data_from_influxdb(
-                measurement=data_type,
-                start_date=start_date,
-                end_date=end_date,
-                tags={"symbol": symbol},
-            )
-
-            if data.empty:
-                print(f"No {data_type} data found for {symbol}")
-                return pd.DataFrame()
-
-            data = data.set_index("timestamp")
-            data = data.sort_index()
-
-            return data
-        except Exception as e:
-            print(f"Error getting backtest data: {e}")
-            return pd.DataFrame()
-
-    async def _analyze_backtest_results(self, cerebro, results) -> Dict[str, Any]:
-        try:
-            initial_cash = cerebro.broker.get_cash()
-            final_value = cerebro.broker.get_value()
-            total_return = (final_value - initial_cash) / initial_cash
-
-            analysis = {
-                "initial_cash": initial_cash,
-                "final_value": final_value,
-                "total_return": total_return,
-                "total_pnl": final_value - initial_cash,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-
-            if results and len(results) > 0:
-                strategy_results = results[0]
-
-                for analyzer_name in cerebro.analyzers:
-                    try:
-                        analyzer = getattr(
-                            strategy_results.analyzers, analyzer_name, None
-                        )
-                        if analyzer and hasattr(analyzer, "get_analysis"):
-                            analyzer_result = analyzer.get_analysis()
-                            analysis[f"analyzer_{analyzer_name}"] = analyzer_result
-                        elif analyzer:
-                            analyzer[f"analyzer_{analyzer_name}"] = str(analyzer)
-                    except Exception as e:
-                        print(f"Error getting analyzer {analyzer_name} result: {e}")
-                        analysis[f"analyzer_{analyzer_name}"] = str(e)
-
-            return analysis
-        except Exception as e:
-            print(f"Error analyzing backtest results: {e}")
-            return {
-                "error": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
-
-    async def _save_backtest_result(
-        self,
-        strategy_id: str,
-        result: Dict[str, Any],
-        start_date: str,
-        end_date: str,
-        created_by: str,
-    ) -> bool:
-        try:
-            from app.core.db import get_session
-            from app.models import Backtest
-            from sqlmodel import select
-            from datetime import datetime
-            import json
-
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
-
-            async with get_session() as session:
-                backtest = Backtest(
-                    name=f"Backtest_{strategy_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                    strategy_id=strategy_id,
-                    start_date=start_dt,
-                    end_date=end_dt,
-                    initial_capital=result.get("initial_cash", 1000000.0),
-                    status="completed",
-                    results=json.dumps(result, ensure_ascii=False, indent=2),
-                    performance_metrics=json.dumps(
-                        {
-                            "total_return": result.get("total_return", 0.0),
-                            "total_pnl": result.get("total_pnl", 0.0),
-                            "final_value": result.get("final_value", 0.0),
-                            "analyzer_count": len(
-                                [k for k in result.keys() if k.startswith("analyzer_")]
-                            ),
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    created_by=created_by,
-                )
-
-                session.add(backtest)
-                await session.commit()
-                await session.refresh(backtest)
-
-                print(f"Backtest result saved successfully for strategy: {strategy_id}")
-                print(
-                    f"Saved {len([k for k in result.keys() if k.startswith('analyzer_')])} analyzers results"
-                )
-                return True
-        except Exception as e:
-            print(f"Error saving backtest result: {e}")
-            return False
+strategy_service = StrategyService()

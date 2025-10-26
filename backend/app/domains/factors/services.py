@@ -105,35 +105,5 @@ class FactorService:
             "is_available": factor.is_available(),
         }
 
-    def register_default_factors(self):
-        from .technical import (
-            MovingAverageFactor,
-            RSIFactor,
-            MACDFactor,
-            BollingerBandsFactor,
-            KDJFactor,
-        )
-        from .fundamental import FinancialRatioFactor
-        from .report import MomentumFactor
-
-        self.register_factor(MovingAverageFactor(period=5, ma_type="SMA"))
-        self.register_factor(MovingAverageFactor(period=20, ma_type="SMA"))
-        self.register_factor(RSIFactor(period=14))
-        self.register_factor(
-            MACDFactor(fast_period=12, slow_period=26, signal_period=9)
-        )
-        self.register_factor(BollingerBandsFactor(20, 2.0))
-        self.register_factor(KDJFactor(9, 3, 3))
-
-        self.register_factor(FinancialRatioFactor(ratio_type="pe_ratio"))
-        self.register_factor(FinancialRatioFactor(ratio_type="pb_ratio"))
-
-        self.register_factor(
-            MomentumFactor(
-                20, "金融工程报告", "动量因子研究", "量化研究团队", "2024-01-01"
-            )
-        )
-
 
 factor_service = FactorService()
-factor_service.register_default_factors()

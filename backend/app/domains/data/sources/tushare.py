@@ -118,7 +118,7 @@ class TushareDataSource(DataSource):
 
             df = df.sort_values("trade_date")
             df["trade_date"] = pd.to_datetime(df["trade_date"], format="%Y%m%d")
-            df = df.rename(columms={"trade_date": "timestamp"})
+            df = df.rename(columns={"trade_date": "timestamp"})
 
             return df
 
@@ -182,10 +182,10 @@ class TushareDataSource(DataSource):
 
             if "date" in df.columns:
                 df["date"] = pd.to_datetime(df["date"])
-                df = df.rename({"date": "timestamp"})
+                df = df.rename(columns={"date": "timestamp"})
             elif "period" in df.columns:
                 df["period"] = pd.to_datetime(df["period"])
-                df = df.rename({"period": "timestamp"})
+                df = df.rename(columns={"period": "timestamp"})
 
             if start_date and end_date:
                 start_dt = pd.to_datetime(start_date)
@@ -231,7 +231,7 @@ class TushareDataSource(DataSource):
                 logger.error("Tushare pro API not initialized")
                 return pd.DataFrame()
 
-            df = self.pro.sotck_basic(exchange="", list_status="L")
+            df = self.pro.stock_basic(exchange="", list_status="L")
 
             if df.empty:
                 return pd.DataFrame()

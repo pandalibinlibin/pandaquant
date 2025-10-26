@@ -65,7 +65,7 @@ class DataSourceFactory:
                 logger.info(f"Trying to fetch {data_type} data from {source.name}")
 
                 if not await source.is_available():
-                    logger.warning(f"Souce {source.name} is not available, skipping")
+                    logger.warning(f"Source {source.name} is not available, skipping")
                     continue
 
                 data = await source.fetch_data(data_type, **kwargs)

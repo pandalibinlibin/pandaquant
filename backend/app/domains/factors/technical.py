@@ -46,13 +46,9 @@ class MovingAverageFactor(TechnicalFactor):
             result = data.copy()
 
             if self.ma_type == "SMA":
-                result[f"ma_{self.period}"] = talib.SMA(
-                    data["close"], timeperiod=self.period
-                )
+                result[self.name] = talib.SMA(data["close"], timeperiod=self.period)
             elif self.ma_type == "EMA":
-                result[f"ema_{self.period}"] = talib.EMA(
-                    data["close"], timeperiod=self.period
-                )
+                result[self.name] = talib.EMA(data["close"], timeperiod=self.period)
 
             self.record_success()
             return result

@@ -1,115 +1,55 @@
-import backtrader as bt
 import pandas as pd
-from typing import Dict, Any, Optional
+import backtrader as bt
+from typing import Dict, Any, List, Optional
+from abc import ABC, abstractmethod
+from app.domains.data.services import data_service
 from app.domains.factors.services import factor_service
+from app.core.logging import get_logger
+from app.domains.strategies.data_group import DataGroup
+
+logger = get_logger(__name__)
 
 
-class BaseStrategy(bt.Strategy):
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.factors = config.get("factors", [])
-        self.risk_params = config.get("risk_params", {})
-        self.factor_objects = {}
+class BaseStrategy(bt.Strategy, ABC):
+    """Base class for all strategies using DataGroup architecture with Backtrader"""
 
-        self._init_factors()
+    def __init__(self):
+        super().__init__()
+        self.data_service = data_service
+        self.factor_service = factor_service
+        self.data_groups: List[DataGroup] = []
+        self._init_data_groups()
 
-    def _init_factors(self):
-        for factor_name in self.factors:
-            factor = factor_service.get_factor(factor_name)
-            if factor:
-                self.factor_objects[factor_name] = factor
-            else:
-                print(f"Warning: Factor {factor_name} not found")
+    @abstractmethod
+    def _init_data_groups(self):
+        """Initialize data groups for this strategy"""
+        pass
 
-    async def next(self):
-        raise NotImplemented("Subclasses must implement this method")
+    def next(self):
+        """Backtrader's next method - called for each bar"""
 
-    def _get_historical_data(
-        self, symbol_index: int = 0, data_type: str = "daily"
-    ) -> pd.DataFrame:
-        try:
-            data = self.datas[symbol_index]
+        group_data = {}
+        for group in self.data_groups:
+            data = group.get_current_data()
+            group_data[group.name] = data
 
-            from app.domains.data.sources.base import DataSource
+        group_data_with_factors = {}
+        for group in self.data_groups:
+            data_with_factors = group.calculate_factors_sync(group_data[group.name])
+            group_data_with_factors[group.name] = data_with_factors
 
-            standard_fields = DataSource.STANDARD_FIELDS.get(
-                data_type, DataSource.STANDARD_FIELDS["daily"]
-            )
+        signals = self._generate_signals(group_data_with_factors)
 
-            base_data = {
-                "timestamp": data.datetime.datetime(),
-                "symbol": f"SYMBOL_{symbol_index}",
-            }
+        self._execute_trades(signals)
 
-            for field in standard_fields:
-                if field in ["timestamp", "symbol"]:
-                    continue
+    @abstractmethod
+    def _generate_signals(
+        self, group_data_with_factors: Dict[str, pd.DataFrame]
+    ) -> List[Dict[str, Any]]:
+        """Generate signals based on all group data and factors"""
+        pass
 
-                field_value = None
-                if hasattr(data, field):
-                    try:
-                        field_value = (
-                            data[field][0] if data[field][0] is not None else None
-                        )
-                    except (IndexError, AttributeError):
-                        field_value = None
-                if field_value is not None:
-                    base_data[field] = field_value
-                else:
-                    if field in ["open", "high", "low", "close", "price"]:
-                        base_data[field] = -999999.0
-                    elif field in ["volume", "amount"]:
-                        base_data[field] = -999999.0
-                    elif field in [
-                        "pct_chg",
-                        "change",
-                        "turnover",
-                        "pe",
-                        "pb",
-                        "ps",
-                        "pcf",
-                    ]:
-                        base_data[field] = -999999.0
-                    elif field in [
-                        "market_cap",
-                        "circulating_market_cap",
-                        "total_shares",
-                        "float_shares",
-                    ]:
-                        base_data[field] = -999999.0
-                    elif field in [
-                        "value",
-                        "unit",
-                        "description",
-                        "category",
-                        "subcategory",
-                    ]:
-                        base_data[field] = None
-                    elif field in [
-                        "revenue",
-                        "profit",
-                        "assets",
-                        "liabilities",
-                        "equity",
-                    ]:
-                        base_data[field] = -999999.0
-                    elif field in ["factor_name", "factor_value", "factor_type"]:
-                        base_data[field] = None
-                    else:
-                        # 其他字段使用None作为默认值
-                        base_data[field] = None
-
-            df = pd.DataFrame([base_data])
-            return df
-
-        except Exception as e:
-            print(f"Error getting historical data: {e}")
-            return pd.DataFrame()
-
-    def _generate_signal(
-        self, factor_values: Dict[str, float]
-    ) -> Optional[Dict[str, Any]]:
-        raise NotImplementedError("Subclass must implement this method")
-
-    def _execute_trade(self, signal: Dict[str, Any]):
-        raise NotImplementedError("Subclass must implement this method")
+    @abstractmethod
+    def _execute_trades(self, signals: List[Dict[str, Any]]):
+        """Execute trades based on signals"""
+        pass
