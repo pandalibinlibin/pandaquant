@@ -12,6 +12,9 @@ from typing import List, Optional, Dict, Any, Tuple, Union
 from app.core.config import settings
 from app.domains.data.services import DataService
 from .base import Factor, FactorType
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class FactorService:
@@ -34,7 +37,7 @@ class FactorService:
             self.factor_types[factor.factor_type].append(factor.name)
             return True
         except Exception as e:
-            print(f"Error registering factor {factor.name}: {e}")
+            logger.error(f"Error registering factor {factor.name}: {e}")
             return False
 
     def get_factor(self, name: str) -> Optional[Factor]:
@@ -87,7 +90,7 @@ class FactorService:
                 result = await self.calculate_factor(factor_name, data, **kwargs)
                 results[factor_name] = result
             except Exception as e:
-                print(f"Error calculating factor {factor_name}: {e}")
+                logger.error(f"Error calculating factor {factor_name}: {e}")
                 results[factor_name] = pd.DataFrame()
 
         return results

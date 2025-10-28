@@ -8,6 +8,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.domains.data.sources.factory import DataSourceFactory, data_source_factory
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class DataService:
@@ -42,7 +45,7 @@ class DataService:
             return data
 
         except Exception as e:
-            print(f"Error fetching data for {symbol}: {e}")
+            logger.error(f"Error fetching data for {symbol}: {e}")
             return pd.DataFrame()
 
     async def store_data_to_influxdb(
@@ -81,7 +84,7 @@ class DataService:
 
             return False
         except Exception as e:
-            print(f"Error storing data to InfluxDB: {e}")
+            logger.error(f"Error storing data to InfluxDB: {e}")
             return False
 
     async def get_data_from_influxdb(
@@ -125,5 +128,5 @@ class DataService:
             return result
 
         except Exception as e:
-            print(f"Error getting data from InfluxDB: {e}")
+            logger.error(f"Error getting data from InfluxDB: {e}")
             return pd.DataFrame()
