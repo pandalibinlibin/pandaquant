@@ -80,6 +80,8 @@ class DualMovingAverageStrategy(BaseStrategy):
             if signal:
                 signals.append(signal)
 
+        return signals
+
     def _execute_trades(self, signals: List[Dict[str, Any]]):
         """Execute trades based on signals"""
         if not signals:

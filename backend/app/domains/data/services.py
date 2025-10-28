@@ -2,6 +2,7 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
+from matplotlib import use
 import pandas as pd
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -28,10 +29,31 @@ class DataService:
         self.write_api = self.influxdb_client.write_api(write_options=SYNCHRONOUS)
         self.query_api = self.influxdb_client.query_api()
 
-    async def fetch_stock_data(
-        self, symbol: str, start_date: str, end_date: str, data_type: str = "daily"
+    async def fetch_data(
+        self,
+        data_type: str,
+        symbol: str,
+        start_date: str,
+        end_date: str,
+        use_cache=True,
     ) -> pd.DataFrame:
         try:
+            if use_cache:
+                cached_data = await self.get_data_from_influxdb(
+                    measurement=data_type,
+                    start_date=start_date,
+                    end_date=end_date,
+                    tags={"symbol": symbol},
+                    fields=None,
+                )
+
+                if not cached_data.empty:
+                    logger.info(
+                        f"Using cached {data_type} data for {symbol} from InfluxDB"
+                    )
+                    return cached_data
+
+            logger.info(f"Fetching {data_type} data for {symbol} from data source")
             data = await self.data_source_factory.fetch_data_with_fallback(
                 data_type=data_type,
                 symbol=symbol,
@@ -41,6 +63,18 @@ class DataService:
 
             if data.empty:
                 return pd.DataFrame()
+
+            if use_cache:
+                fields = [
+                    col for col in data.columns if col not in ["timestamp", "symbol"]
+                ]
+                await self.store_data_to_influxdb(
+                    measurement=data_type,
+                    data=data,
+                    tags={"symbol": symbol},
+                    fields=fields,
+                )
+                logger.info(f"Stored {data_type} data for {symbol} to InfluxDB")
 
             return data
 

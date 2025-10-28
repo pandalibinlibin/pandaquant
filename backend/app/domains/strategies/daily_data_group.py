@@ -23,11 +23,11 @@ class DailyDataGroup(DataGroup):
     ) -> pd.DataFrame:
         """Get daily data for this group"""
         try:
-            data = await self.data_service.fetch_stock_data(
+            data = await self.data_service.fetch_data(
+                data_type=self.data_type,
                 symbol=symbol,
                 start_date=start_date,
                 end_date=end_date,
-                data_type=self.data_type,
             )
             self._historical_data = data
             return data
@@ -35,6 +35,27 @@ class DailyDataGroup(DataGroup):
         except Exception as e:
             logger.error(f"Error getting daily data for {symbol}: {e}")
             raise
+
+    def get_current_bar_data(self, bt_data) -> pd.DataFrame:
+        """Get current bar data from Backtrader data feed"""
+        try:
+            current_data = pd.DataFrame(
+                {
+                    "datetime": [bt_data.datetime.datetime(0)],
+                    "open": [bt_data.open[0]],
+                    "high": [bt_data.high[0]],
+                    "low": [bt_data.low[0]],
+                    "close": [bt_data.close[0]],
+                    "volume": [bt_data.volume[0]],
+                }
+            )
+
+            return current_data
+
+        except Exception as e:
+            logger.error(f"Error getting curretn bar data for {self.name}: {e}")
+
+            return pd.DataFrame()
 
     async def calculate_factors(self, data: pd.DataFrame) -> pd.DataFrame:
         """Calculate factors for this group"""

@@ -30,8 +30,9 @@ class BaseStrategy(bt.Strategy, ABC):
 
         group_data = {}
         for group in self.data_groups:
-            data = group.get_current_data()
-            group_data[group.name] = data
+            current_data = group.get_current_bar_data(self.data)
+            group.set_current_data(current_data)
+            group_data[group.name] = current_data
 
         group_data_with_factors = {}
         for group in self.data_groups:

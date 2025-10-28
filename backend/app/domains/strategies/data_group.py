@@ -28,6 +28,11 @@ class DataGroup(ABC):
         """Get data for this group"""
         pass
 
+    @abstractmethod
+    def get_current_bar_data(self, bt_data) -> pd.DataFrame:
+        """Get current bar data from Backtrader data feed"""
+        pass
+
     def get_current_data(self) -> pd.DataFrame:
         """Get current data for this group (synchronous)"""
         if self._cached_data is None:
@@ -73,6 +78,14 @@ class DataGroup(ABC):
             self.factors.remove(factor)
 
     def calculate_factors_sync(self, data: pd.DataFrame) -> pd.DataFrame:
-        if self._factor_data is not None:
-            return self._factor_data
-        return data
+        """Calculate factors synchronously (for Backtrader integration)"""
+
+        try:
+            if self._factor_data is not None:
+                return self._factor_data
+
+            return data
+
+        except Exception as e:
+            logger.error(f"Error in calculate_factors_sync for {self.name}: {e}")
+            return data
