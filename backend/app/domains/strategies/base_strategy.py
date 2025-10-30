@@ -10,7 +10,13 @@ from app.domains.strategies.data_group import DataGroup
 logger = get_logger(__name__)
 
 
-class BaseStrategy(bt.Strategy, ABC):
+class StrategyMeta(type(bt.Strategy), type(ABC)):
+    """Meta class to resolve metaclass conflict between Backtrader and ABC"""
+
+    pass
+
+
+class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
     """Base class for all strategies using DataGroup architecture with Backtrader"""
 
     def __init__(self):

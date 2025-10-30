@@ -2,7 +2,6 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
-from matplotlib import use
 import pandas as pd
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -164,3 +163,6 @@ class DataService:
         except Exception as e:
             logger.error(f"Error getting data from InfluxDB: {e}")
             return pd.DataFrame()
+
+
+data_service = DataService()

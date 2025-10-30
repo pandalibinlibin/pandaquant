@@ -198,3 +198,27 @@ class Signal(SQLModel, table=True):
 
     strategy: Optional["Strategy"] = Relationship(back_populates="signals")
     creator: Optional["User"] = Relationship(back_populates="signals")
+
+
+class BacktestResult(SQLModel, table=True):
+    """Backtest result model for storing backtest performance metrics"""
+
+    __tablename__ = "backtest_result"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    strategy_name: str = Field(max_length=100)
+    symbol: str = Field(max_length=20)
+    start_date: str = Field(max_length=20)
+    end_date: str = Field(max_length=20)
+    initial_capital: float
+    final_value: float
+    total_return: float
+    max_drawdown: float
+    sharpe_ratio: float
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate: float
+    result_data: str = Field(default="{}")
+    created_by: str = Field(max_length=100)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

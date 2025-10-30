@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from app.domains.strategies.base_strategy import BaseStrategy
 from app.core.logging import get_logger
-from app.core.db import get_db
+from app.api.deps import get_db
 from app.models import BacktestResult
 
 logger = get_logger(__name__)
@@ -17,7 +17,7 @@ class StrategyService:
     """Strategy service for managing and running strategies"""
 
     def __init__(self):
-        self.strategies: Dict[str, BaseStrategy] = {}
+        self.strategies: Dict[str, type[BaseStrategy]] = {}
         self._auto_discover_strategies()
 
     def _auto_discover_strategies(self):
@@ -43,10 +43,10 @@ class StrategyService:
                                 and attr != BaseStrategy
                             ):
 
-                                strategy_instance = attr()
-                                self.strategies[strategy_name] = strategy_instance
+                                # Store strategy class, not instance
+                                self.strategies[attr_name] = attr
                                 logger.info(
-                                    f"Discovered and registered strategy: {strategy_name}"
+                                    f"Discovered and registered strategy class: {attr_name}"
                                 )
                                 break
 
@@ -58,7 +58,7 @@ class StrategyService:
         except Exception as e:
             logger.error(f"Error discovering and registering strategies: {e}")
 
-    def get_strategy(self, strategy_name: str) -> Optional[BaseStrategy]:
+    def get_strategy(self, strategy_name: str) -> Optional[type[BaseStrategy]]:
         """Get strategy by name"""
         return self.strategies.get(strategy_name)
 
@@ -66,10 +66,10 @@ class StrategyService:
         """List all available strategies"""
         return list(self.strategies.keys())
 
-    def register_strategy(self, name: str, strategy: BaseStrategy):
-        """Register a new strategy"""
+    def register_strategy(self, name: str, strategy: type[BaseStrategy]):
+        """Register a new strategy class"""
         self.strategies[name] = strategy
-        logger.info(f"Registered strategy: {name}")
+        logger.info(f"Registered strategy class: {name}")
 
     def unregister_strategy(self, name: str) -> bool:
         """Unregister a strategy"""
