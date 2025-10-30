@@ -280,6 +280,8 @@
 - `backend/app/domains/signals/wechat.py` - 企业微信推送实现
 - `backend/app/domains/signals/email.py` - 邮件推送实现
 - `backend/app/domains/signals/services.py` - 信号推送服务
+- `backend/tests/domains/signals/test_push_channels.py` - 推送渠道测试（4个测试用例）
+- `backend/tests/domains/signals/test_signal_service.py` - 推送服务测试（4个测试用例）
 
 #### 核心功能
 
@@ -559,6 +561,7 @@
 39. 数据库迁移（568589575e25_add_push_fields_to_signal_model）
 40. 策略模块集成信号推送（TradingMode枚举、BaseStrategy推送逻辑）
 41. 信号推送架构完成（回测不推送，模拟盘/实盘推送）
+42. 信号推送模块测试套件（8个测试用例全部通过）
 
 ### 进行中 🔄
 
