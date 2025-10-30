@@ -4,11 +4,14 @@ import json
 import os
 import importlib
 from datetime import datetime
+from enum import Enum
 from typing import Dict, Any, List, Optional
 from app.domains.strategies.base_strategy import BaseStrategy
 from app.core.logging import get_logger
 from app.api.deps import get_db
 from app.models import BacktestResult
+from app.domains.strategies.enums import TradingMode
+from app.domains.signals.services import signal_push_service
 
 logger = get_logger(__name__)
 
@@ -253,6 +256,7 @@ class StrategyService:
         created_by: str = "system",
         commission: float = 0.0003,  # 0.03% commission (A股标准)
         min_commission: float = 5.0,  # Minimum commission 5元
+        mode: TradingMode = TradingMode.BACKTEST,
         slippage: float = 0.001,  # 0.1% slippage (A股流动性较好)
         **kwargs,
     ) -> Dict[str, Any]:

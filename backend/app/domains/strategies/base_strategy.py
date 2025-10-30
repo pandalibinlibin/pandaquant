@@ -6,6 +6,8 @@ from app.domains.data.services import data_service
 from app.domains.factors.services import factor_service
 from app.core.logging import get_logger
 from app.domains.strategies.data_group import DataGroup
+from app.domains.strategies.enums import TradingMode
+from app.domains.signals.services import signal_push_service
 
 logger = get_logger(__name__)
 
@@ -21,10 +23,17 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
 
     def __init__(self):
         super().__init__()
+        self.mode = TradingMode.BACKTEST
+        self.signal_push_service = signal_push_service
         self.data_service = data_service
         self.factor_service = factor_service
         self.data_groups: List[DataGroup] = []
         self._init_data_groups()
+
+    async def _push_signal_if_needed(self, signal_data: dict):
+        """Push signal if in paper/live trading mode"""
+        if self.mode in [TradingMode.PAPER_TRADING, TradingMode.LIVE_TRADING]:
+            await self.signal_push_service.push_signal(signal_data)
 
     @abstractmethod
     def _init_data_groups(self):
