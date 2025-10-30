@@ -368,20 +368,35 @@
 #### 文件位置
 
 - `backend/app/models.py` - 数据模型定义
+- `backend/app/alembic/versions/` - 数据库迁移文件
 
 #### 核心模型
 
+- **User**：用户模型
 - **Strategy**：策略模型
-- **Backtest**：回测结果模型
-- **Factor**：因子模型
 - **Signal**：交易信号模型
+  - 基础字段：策略ID、股票代码、信号类型、信号强度、价格、数量等
+  - 推送字段：push_status（推送状态）、push_channels（推送渠道）、push_time（推送时间）、push_error（推送错误）
+  - 索引优化：symbol、signal_type、push_status
+- **BacktestResult**：回测结果模型
+  - 策略名称、股票代码、时间范围
+  - 绩效指标：收益率、夏普比率、最大回撤、交易统计等
+  - 完整的分析器结果存储
+- **Factor**：因子模型
 - **MarketData**：市场数据模型
+
+#### 数据库迁移
+
+- `b81c3e8e3727_add_backtest_result_table.py` - 添加BacktestResult表
+- `568589575e25_add_push_fields_to_signal_model.py` - 为Signal模型添加推送字段
 
 #### 技术特点
 
 - 基于SQLModel的ORM
 - 支持关系映射
-- 索引优化
+- 索引优化提高查询性能
+- Alembic数据库版本控制
+- 完整的迁移历史记录
 
 ## 待完成的功能模块
 
@@ -540,6 +555,8 @@
 35. StrategyService优化（使用类名而非文件名作为策略键）
 36. 信号推送模块完整实现（抽象基类、企业微信、邮件推送）
 37. 信号推送服务层（多渠道管理、异步推送、健康监控）
+38. Signal模型增强（添加推送状态、渠道、时间、错误字段）
+39. 数据库迁移（568589575e25_add_push_fields_to_signal_model）
 
 ### 进行中 🔄
 
