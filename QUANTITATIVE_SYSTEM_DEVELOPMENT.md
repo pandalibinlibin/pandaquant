@@ -377,6 +377,7 @@
 #### 核心功能
 
 - **回测链路集成测试**：
+
   - 策略服务初始化验证
   - 策略注册验证
   - 完整回测流程测试（数据→因子→策略→回测）
@@ -385,6 +386,7 @@
   - 错误处理测试（无效策略名称）
 
 - **模拟盘链路集成测试**：
+
   - SignalPushService初始化验证
   - 推送渠道注册验证
   - 信号推送基本功能测试
@@ -610,6 +612,27 @@
     - 模拟盘链路集成测试（test_paper_trading_flow.py - 97行，6个测试用例）
     - 模块集成验证测试（test_module_integration.py - 85行，5个测试用例）
     - 总计18个集成测试用例，覆盖完整业务流程
+44. 回测性能分析器全面集成
+    - 添加13个Backtrader analyzers（Returns, SharpeRatio, DrawDown, TradeAnalyzer, TimeReturn, TimeDrawDown, VWR, Calmar, SQN, AnnualReturn, GrossLeverage, PositionsValue, PyFolio）
+    - 添加3个observers（Broker, Trades, BuySell）用于图表可视化
+    - 完整提取所有analyzers数据到performance字典，为前端提供全面的性能指标
+45. 回测图表保存功能
+    - 实现图表自动保存，使用backtest_id（UUID）作为文件名，确保与回测记录一一对应
+    - 图表保存在BACKTEST_RESULTS_PATH配置目录
+    - 返回结果包含chart_path，便于前端访问和展示
+46. DualMovingAverageStrategy完整实现
+    - 实现双均线策略类（5日和20日移动平均线）
+    - 使用因子列名直接访问已计算的MA因子，避免重复计算
+    - 实现信号生成（金叉/死叉检测）和置信度计算（基于均线距离）
+    - 实现交易执行逻辑（买入/卖出）和信号推送
+47. 策略自动发现机制改进
+    - 改进自动发现逻辑，扫描包下所有Python文件并自动导入
+    - 无需在**init**.py中手动导入策略类，实现真正的自动发现
+    - 自动过滤基础类文件，只发现策略类
+48. 策略模块测试完善
+    - 策略模块测试套件扩展（10个测试用例全部通过）
+    - 验证策略类结构、继承关系、方法存在性
+    - 验证自动发现机制和服务功能
 
 ### 进行中 🔄
 
