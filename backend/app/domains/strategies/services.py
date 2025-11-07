@@ -14,6 +14,7 @@ from app.domains.data.services import DataService, data_service
 from app.domains.factors.services import FactorService, factor_service
 from app.domains.strategies.base_strategy import BaseStrategy
 from app.domains.strategies.enums import TradingMode
+from app.domains.strategies.data_group import DataGroup
 
 
 from pathlib import Path
@@ -25,6 +26,30 @@ import matplotlib.pyplot as plt
 from app.core.config import settings
 
 logger = get_logger(__name__)
+
+
+def create_data_group_from_config(config: Dict[str, Any]) -> DataGroup:
+    """
+    Factory function to create DataGroup instance from configuration
+
+    Args:
+        config: DataGroup configuration dictionary with 'type' key
+
+    Returns:
+        DataGroup instance
+    """
+    from app.domains.strategies.data_group import DataGroup
+    from app.domains.strategies.daily_data_group import DailyDataGroup
+
+    group_type = config.get("type")
+    if group_type == "DailyDataGroup":
+        return DailyDataGroup(
+            name=config["name"],
+            weight=config.get("weight", 1.0),
+            factors=config.get("factors", []),
+        )
+    else:
+        raise ValueError(f"Unsupported DataGroup type: {group_type}")
 
 
 class StrategyService:
@@ -135,13 +160,28 @@ class StrategyService:
 
         strategy_class._run_mode = mode
         strategy_class._run_symbol = symbol
-        strategy_instance = strategy_class()
+        strategy_class._run_start_date = start_date
+        strategy_class._run_end_date = end_date
 
-        await strategy_instance.prepare_all_data_groups(
-            symbol=symbol, start_date=start_date, end_date=end_date
-        )
+        data_group_configs = strategy_class.get_data_group_configs()
 
-        feeds = strategy_instance.get_backtrader_feeds()
+        feeds = []
+        for config in data_group_configs:
+            group = create_data_group_from_config(config)
+            group.set_service(self.data_service, self.factor_service)
+            await group.prepare_data(
+                symbol=symbol, start_date=start_date, end_date=end_date
+            )
+            if group._prepared_data is None or group._prepared_data.empty:
+                logger.warning(
+                    f"Data preparation failed for {group.name}, skipping this DataGroup"
+                )
+                continue
+
+            feed = group.to_backtrader_feed()
+            feed._data_group_name = group.name
+            feeds.append(feed)
+
         if not feeds:
             raise ValueError(
                 "No valid data feeds found. Ensure at least one DataGroup has OHLCV data."
@@ -178,19 +218,27 @@ class StrategyService:
         cerebro.broker.setcash(initial_capital)
 
         commtype_val = (
-            bt.CommissionInfo.PERC
+            bt.CommInfoBase.COMM_PERC
             if commtype.upper() == "PERC"
-            else bt.CommissionInfo.FIXED
+            else bt.CommInfoBase.COMM_FIXED
         )
 
-        cerebro.broker.setcommission(
+        comminfo = bt.CommInfoBase(
             commission=commission,
             commtype=commtype_val,
-            commmin=commmin,
             stocklike=stocklike,
-            leverage=leverage,
-            margin=margin,
         )
+
+        if commmin is not None:
+            comminfo.commmin = commmin
+
+        if leverage is not None:
+            comminfo.p.leverage = leverage
+
+        if margin is not None:
+            comminfo.p.margin = margin
+
+        cerebro.broker.addcommissioninfo(comminfo)
 
         try:
             loop = asyncio.get_event_loop()
@@ -230,9 +278,8 @@ class StrategyService:
             performance = {}
 
             if hasattr(analyzers, "returns") and analyzers.returns:
-                performance["total_return"] = analyzers.returns.get_analysis()[
-                    "rtot", 0.0
-                ]
+                returns_data = analyzers.returns.get_analysis()
+                performance["total_return"] = returns_data.get("rtot", 0.0)
 
             if hasattr(analyzers, "sharpe") and analyzers.sharpe:
                 sharpe_data = analyzers.sharpe.get_analysis()

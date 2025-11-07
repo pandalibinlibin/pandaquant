@@ -45,6 +45,17 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
         for group in self.data_groups:
             group.set_service(self.data_service, self.factor_service)
 
+    @classmethod
+    @abstractmethod
+    def get_data_group_configs(cls) -> List[Dict[str, Any]]:
+        """
+        Get data group configurations without instantiating the strategy
+
+        Returns list of data group configuration dictionaries
+        This allows StrategyService to prepare data before creating cerebro
+        """
+        pass
+
     @abstractmethod
     def _init_data_groups(self):
         """Initialize data groups for this strategy"""
@@ -93,6 +104,11 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
         """
         Get DataGroup name for a given data feed index
         """
+
+        if data_index < len(self.datas):
+            data = self.datas[data_index]
+            if hasattr(data, "_data_group_name"):
+                return data._data_group_name
 
         return self._data_index_to_group.get(data_index)
 

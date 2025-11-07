@@ -633,6 +633,19 @@
     - 策略模块测试套件扩展（10个测试用例全部通过）
     - 验证策略类结构、继承关系、方法存在性
     - 验证自动发现机制和服务功能
+49. 策略模块架构重构与Backtrader集成优化
+    - 重构策略模块，使用Backtrader的adddata()方法管理多个DataGroup
+    - 所有DataGroup数据源通过cerebro.adddata()统一管理，确保时间对齐和数据同步
+    - 修正Backtrader CommissionInfo使用方式（使用CommInfoBase.COMM_PERC/COMM_FIXED）
+    - 修正佣金设置方式（使用CommInfoBase对象和addcommissioninfo()方法）
+    - 修正leverage设置方式（使用comminfo.p.leverage属性）
+    - 优化因子创建逻辑：根据name和type动态创建因子实例，使用唯一键存储
+    - 修正因子数据验证：在计算因子前重置索引以包含timestamp列
+    - 修正因子结果合并：使用.values按位置赋值，避免索引不匹配
+    - 修正性能指标提取：使用.get()方法安全访问分析结果字典
+    - 添加mock数据测试用例，支持不依赖外部数据源的稳定测试
+    - 优化代码质量：删除重复代码，修复所有语法错误
+    - 集成测试验证：3个测试用例（2个通过，1个跳过），mock数据测试稳定运行
 
 ### 进行中 🔄
 

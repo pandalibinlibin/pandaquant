@@ -133,14 +133,17 @@ class DailyDataGroup(DataGroup):
         await self._create_and_register_factors()
 
         factor_data = data.copy()
+        data_with_timestamp = data.reset_index()
         for factor_name, factor_obj in self._factor_objects.items():
             try:
-                factor_result = await factor_obj.calculate(data)
+                factor_result = await factor_obj.calculate(data_with_timestamp)
 
                 if isinstance(factor_result, pd.DataFrame):
                     factor_col_name = factor_obj.name
                     if factor_col_name in factor_result.columns:
-                        factor_data[factor_col_name] = factor_result[factor_col_name]
+                        factor_data[factor_col_name] = factor_result[
+                            factor_col_name
+                        ].values
 
                 logger.debug(
                     f"Successfully calculated factor {factor_name} for {self.name}"
@@ -159,22 +162,34 @@ class DailyDataGroup(DataGroup):
         if not self.factor_service:
             return
 
+        from app.domains.factors.technical import MovingAverageFactor
+
         for factor_config in self.factors:
             factor_name = factor_config.get("name")
-            factor_class = factor_config.get("class")
+            factor_type = factor_config.get("type")
             factor_params = factor_config.get("params", {})
 
-            if factor_name in self._factor_objects:
+            period = factor_params.get("period", 20)
+            factor_key = f"{factor_name}_{period}"
+            if factor_key in self._factor_objects:
                 continue
 
             try:
-                factor_obj = factor_class(
-                    name=f"{self.name}_{factor_name}",
-                    **factor_params,
-                )
+                if factor_name == "MA" and factor_type == "technical":
+                    unique_name = f"{self.name}_{factor_name}_{period}_SMA"
+                    factor_obj = MovingAverageFactor(
+                        period=period,
+                        ma_type="SMA",
+                    )
+                    factor_obj.name = unique_name
+                else:
+                    logger.warning(
+                        f"Unknown factor: name={factor_name}, type={factor_type}, params={factor_params}, skipping..."
+                    )
+                    continue
 
                 self.factor_service.register_factor(factor_obj)
-                self._factor_objects[factor_name] = factor_obj
+                self._factor_objects[factor_key] = factor_obj
                 logger.debug(
                     f"Created and registered factor {factor_name} for group {self.name}"
                 )

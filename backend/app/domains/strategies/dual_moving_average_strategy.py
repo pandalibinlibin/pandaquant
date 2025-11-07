@@ -26,6 +26,29 @@ class DualMovingAverageStrategy(BaseStrategy):
         self.long_period = 20
         super().__init__()
 
+    @classmethod
+    def get_data_group_configs(cls) -> List[Dict[str, Any]]:
+        """Get data gorup configurations without instantiating the strategy"""
+        return [
+            {
+                "name": "daily",
+                "type": "DailyDataGroup",
+                "weight": 1.0,
+                "factors": [
+                    {
+                        "name": "MA",
+                        "type": "technical",
+                        "params": {"period": 5, "column": "close"},
+                    },
+                    {
+                        "name": "MA",
+                        "type": "technical",
+                        "params": {"period": 20, "column": "close"},
+                    },
+                ],
+            }
+        ]
+
     def _init_data_groups(self):
         """Initialize data groups with moving average factors"""
         daily_group = DailyDataGroup(
