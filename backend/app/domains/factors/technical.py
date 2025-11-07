@@ -89,9 +89,7 @@ class RSIFactor(TechnicalFactor):
 
         try:
             result = data.copy()
-            result[f"rsi_{self.period}"] = talib.RSI(
-                data["close"], timeperiod=self.period
-            )
+            result[self.name] = talib.RSI(data["close"], timeperiod=self.period)
             self.record_success()
             return result
         except Exception as e:

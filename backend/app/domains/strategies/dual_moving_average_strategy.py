@@ -10,7 +10,6 @@ import backtrader as bt
 import asyncio
 
 from app.domains.strategies.base_strategy import BaseStrategy
-from app.domains.strategies.daily_data_group import DailyDataGroup
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +27,7 @@ class DualMovingAverageStrategy(BaseStrategy):
 
     @classmethod
     def get_data_group_configs(cls) -> List[Dict[str, Any]]:
-        """Get data gorup configurations without instantiating the strategy"""
+        """Get data group configurations without instantiating the strategy"""
         return [
             {
                 "name": "daily",
@@ -48,26 +47,6 @@ class DualMovingAverageStrategy(BaseStrategy):
                 ],
             }
         ]
-
-    def _init_data_groups(self):
-        """Initialize data groups with moving average factors"""
-        daily_group = DailyDataGroup(
-            name="daily",
-            weight=1.0,
-            factors=[
-                {
-                    "name": "MA",
-                    "type": "technical",
-                    "params": {"period": self.short_period, "column": "close"},
-                },
-                {
-                    "name": "MA",
-                    "type": "technical",
-                    "params": {"period": self.long_period, "column": "close"},
-                },
-            ],
-        )
-        self.data_groups = [daily_group]
 
     def _generate_signals(
         self, group_data: Dict[str, bt.feeds.DataBase], current_date: pd.Timestamp

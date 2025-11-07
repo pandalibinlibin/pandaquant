@@ -146,7 +146,7 @@
 - **技术指标因子**：基于TA-Lib实现
 
   - 移动平均线 (SMA, EMA) ✅ - 4个测试用例
-  - 相对强弱指数 (RSI) ✅ - 2个测试用例
+  - 相对强弱指数 (RSI) ✅ - 2个测试用例（已修复列名一致性，使用self.name作为输出列名）
   - MACD指标 ✅ - 2个测试用例
   - 布林带 (Bollinger Bands) ✅ - 2个测试用例
   - KDJ随机指标 ✅ - 2个测试用例
@@ -209,6 +209,7 @@
 - `backend/tests/domains/strategies/test_data_group.py` - 数据组测试（1个测试用例）
 - `backend/tests/domains/strategies/test_dual_moving_average_strategy.py` - 双均线策略测试（3个测试用例）
 - `backend/tests/domains/strategies/test_strategy_service.py` - 策略服务测试（4个测试用例）
+- `EXTENSION_GUIDE.md` - 系统扩展指南（详细说明如何添加DataGroup、Factor和Strategy）
 
 #### 核心功能
 
@@ -218,7 +219,8 @@
   - 集成DataGroup架构，支持多数据组管理
   - 集成数据服务和因子服务
   - 提供next()方法协调数据获取、因子计算、信号生成和交易执行
-  - 抽象方法：\_init_data_groups(), \_generate_signals(), \_execute_trades()
+  - 抽象方法：get_data_group_configs()（类方法）, \_generate_signals(), \_execute_trades()
+  - DataGroup实例由StrategyService管理，策略通过Backtrader的self.datas访问数据
 
 - **数据组架构 (DataGroup)**：
 
@@ -247,11 +249,13 @@
 
   - 自动发现和注册策略类（使用类名作为键）✅
   - 策略CRUD操作管理 ✅
+  - DataGroup工厂模式：动态创建和管理DataGroup实例 ✅
+  - 数据准备和Backtrader feed转换：在创建cerebro前完成所有数据准备 ✅
   - 完整的回测引擎实现 ✅
   - 中国A股市场优化参数配置 ✅
   - 全面的性能分析器集成 ✅
   - 回测结果数据库存储 ✅
-  - 8个测试用例全部通过 ✅
+  - 测试用例全部通过（28个通过，1个跳过）✅
 
 - **回测引擎**：基于Backtrader
 
@@ -264,13 +268,17 @@
 #### 技术特点
 
 - **DataGroup架构**：模块化数据管理，每个数据组负责特定类型的数据和因子
-- **策略自主性**：每个策略类负责自己的数据获取和因子计算
-- **同步异步协调**：解决Backtrader同步next()方法与异步数据获取的矛盾
+- **工厂模式**：StrategyService使用工厂模式动态创建DataGroup实例
+- **数据生命周期管理**：DataGroup实例在StrategyService中创建、准备和转换，策略通过Backtrader feeds访问
+- **Backtrader集成**：所有数据通过cerebro.adddata()管理，确保时间对齐和数据同步
+- **因子访问机制**：因子通过Backtrader lines索引访问，支持多因子列映射
+- **同步异步协调**：数据准备在异步环境中完成，策略执行在Backtrader同步环境中进行
 - **自动发现**：策略服务自动发现和注册策略类，使用类名作为键
 - **中国A股优化**：针对A股市场的特殊参数配置
 - **全面分析**：集成20+个Backtrader分析器
 - **数据持久化**：完整的回测结果存储和分析
-- **完整测试覆盖**：8个测试用例覆盖数据组、策略类和服务层
+- **完整测试覆盖**：测试用例全部通过（28个通过，1个跳过），覆盖数据组、策略类和服务层
+- **扩展指南**：提供详细的EXTENSION_GUIDE.md文档，说明如何添加新的DataGroup、Factor和Strategy类型
 
 ### 5. 信号推送层 ✅
 
@@ -653,6 +661,25 @@
     - 集成测试套件统计：总计19个测试用例（18个通过，1个跳过）
     - 测试覆盖范围：回测流程、Paper Trading流程、模块间集成、错误处理、边界情况
     - 所有新增测试用例使用mock数据，不依赖外部数据源，确保测试稳定性
+51. 策略模块架构优化与代码质量提升
+    - 移除BaseStrategy中的data_groups冗余属性：DataGroup实例现在完全由StrategyService管理
+    - 移除\_init_data_groups抽象方法：数据组配置通过get_data_group_configs()类方法提供
+    - 优化数据生命周期：DataGroup在StrategyService中创建、准备和转换为Backtrader feeds
+    - 修复RSIFactor列名不一致：使用self.name作为输出列名，确保与注册名称一致
+    - 优化因子工厂映射：使用factor_cache_key和factory_key区分缓存键和工厂键
+    - 添加Backtrader lines索引注释：详细说明因子列到Backtrader lines的映射逻辑（6 + i）
+    - 修复文档拼写错误：修正"gorup"为"group"
+    - 架构设计验证：完成全面的架构检查，确认设计合理且便于扩展
+    - 测试验证：所有测试用例通过（28个通过，1个跳过），确保架构优化未破坏现有功能
+    - 代码质量：无linter错误，无TODO标记，导入使用正确，类型注解完整
+52. 系统扩展指南文档
+    - 创建EXTENSION_GUIDE.md：详细的系统扩展指南文档（807行）
+    - 详细说明如何添加新的DataGroup类型：包括创建、prepare_data、to_backtrader_feed、因子计算等步骤
+    - 详细说明如何添加新的Factor类型：包括类型选择、类创建、DataGroup工厂注册等步骤
+    - 详细说明如何添加新的Strategy类型：包括文件创建、类定义、数据组配置、信号生成、交易执行等步骤
+    - 深入解释Strategy与Backtrader集成：六层架构、数据访问、因子访问、时间对齐等核心概念
+    - 提供完整的代码示例和最佳实践：确保开发者能够轻松扩展系统
+    - 包含常见问题和参考文件：帮助开发者快速定位和解决问题
 
 ### 进行中 🔄
 
@@ -745,25 +772,30 @@
 - ✅ **完整的因子层**：技术指标、基本面、报告因子，支持Qlib集成
 - ✅ **完整的策略层**：DataGroup架构、策略抽象基类、双均线策略实现
 - ✅ **完整的回测引擎**：基于Backtrader，中国A股市场优化
-- ✅ **DataGroup架构**：模块化数据管理，策略自主性
-- ✅ **同步异步协调**：解决Backtrader同步next()方法与异步数据获取的矛盾
+- ✅ **DataGroup架构**：模块化数据管理，工厂模式创建，生命周期由StrategyService管理
+- ✅ **Backtrader深度集成**：所有数据通过cerebro.adddata()管理，确保时间对齐和数据同步
+- ✅ **同步异步协调**：数据准备在异步环境完成，策略执行在Backtrader同步环境进行
 - ✅ **全面性能分析**：20+个Backtrader分析器，完整结果存储
-- ✅ **代码库稳定性**：修复所有错误，清理空模块
+- ✅ **代码库稳定性**：修复所有错误，清理冗余代码，架构优化完成
 - ✅ **日志系统规范**：统一使用logger，提高可维护性
 - ✅ **智能缓存系统**：自动缓存所有数据，提升性能和可靠性
 - ✅ **信号推送系统**：多渠道推送，支持企业微信和邮件，异步高效
+- ✅ **架构设计验证**：完成全面架构检查，确认设计合理且便于扩展
 
 **技术亮点**：
 
-- DataGroup架构设计，模块化数据管理
-- 策略自主性，每个策略负责自己的数据和因子
+- DataGroup架构设计，模块化数据管理，工厂模式创建
+- 数据生命周期管理：StrategyService统一管理DataGroup的创建、准备和转换
+- Backtrader深度集成：所有数据通过adddata()管理，因子通过lines索引访问
+- 策略简化：移除冗余属性，通过Backtrader feeds访问数据，职责更清晰
 - 同步异步协调机制，完美适配Backtrader
 - 中国A股市场特定优化（佣金、滑点、做空限制）
 - 全面的性能分析器集成
 - 完整的回测结果存储和分析
-- 代码库稳定性保证，无错误无冗余
+- 代码库稳定性保证，无错误无冗余，架构设计验证完成
 - 日志系统规范化，提高可维护性
 - 智能缓存系统，三步缓存策略（查询→获取→存储）
 - 信号推送系统，多渠道支持，回测/模拟盘分离
+- 扩展性设计：支持轻松添加新的DataGroup、Factor和Strategy类型
 
 下一步的重点是API路由层和前端界面的开发，以及系统集成测试。整个系统预计在1-2个月内可以完成基础功能，为量化投资业务提供强有力的技术支撑。

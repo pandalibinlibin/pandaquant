@@ -9,7 +9,6 @@ import backtrader as bt
 
 from app.domains.data.services import DataService, data_service
 from app.domains.factors.services import FactorService, factor_service
-from app.domains.strategies.data_group import DataGroup
 from app.domains.strategies.enums import TradingMode
 from app.domains.signals.services import signal_push_service
 from app.core.logging import get_logger
@@ -37,12 +36,8 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
 
         self.data_service: Optional[DataService] = data_service
         self.factor_service: Optional[FactorService] = factor_service
-        self.data_groups: List[DataGroup] = []
-        self._data_index_to_group: Dict[int, str] = {}
 
-        self._init_data_groups()
-        for group in self.data_groups:
-            group.set_service(self.data_service, self.factor_service)
+        self._data_index_to_group: Dict[int, str] = {}
 
     @classmethod
     @abstractmethod
@@ -53,11 +48,6 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
         Returns list of data group configuration dictionaries
         This allows StrategyService to prepare data before creating cerebro
         """
-        pass
-
-    @abstractmethod
-    def _init_data_groups(self):
-        """Initialize data groups for this strategy"""
         pass
 
     def _get_group_name(self, data_index: int) -> Optional[str]:

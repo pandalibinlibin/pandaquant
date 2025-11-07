@@ -22,7 +22,6 @@ class TestDualMovingAverageStrategy:
         assert hasattr(DualMovingAverageStrategy, "next")
         assert hasattr(DualMovingAverageStrategy, "_generate_signals")
         assert hasattr(DualMovingAverageStrategy, "_execute_trades")
-        assert hasattr(DualMovingAverageStrategy, "_init_data_groups")
 
     def test_strategy_inheritance(self):
         """Test strategy inherits from correct base classes"""
