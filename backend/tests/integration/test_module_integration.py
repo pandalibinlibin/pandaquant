@@ -82,3 +82,69 @@ class TestModuleIntegration:
         assert len(strategies) > 0, "Should have at least one strategy"
 
         assert len(signal_push_service.channels) > 0, "Should have at least one channel"
+
+    @pytest.mark.asyncio
+    async def test_complete_integration_flow(self):
+        """Test complete integration flow: Data -> Factor -> Strategy -> Signal"""
+        import pandas as pd
+        from unittest.mock import AsyncMock, patch, MagicMock
+        from app.domains.data.services import DataService
+        from app.domains.strategies.enums import TradingMode
+
+        def create_mock_data(start_date: str, end_date: str) -> pd.DataFrame:
+            """Create mock OHLCV data for testing"""
+            start = pd.to_datetime(start_date)
+            end = pd.to_datetime(end_date)
+            dates = pd.date_range(start=start, end=end, freq="D")
+            base_price = 10.0
+            data = []
+            for i, date in enumerate(dates):
+                price = base_price + i * 0.1 + (i % 5) * 0.2
+                data.append(
+                    {
+                        "timestamp": date,
+                        "open": price * 0.99,
+                        "high": price * 1.02,
+                        "low": price * 0.98,
+                        "close": price,
+                        "volume": 1000000 + i * 10000,
+                    }
+                )
+            return pd.DataFrame(data)
+
+        mock_data = create_mock_data("2024-01-01", "2024-01-31")
+
+        with patch.object(
+            DataService, "fetch_data", new_callable=AsyncMock
+        ) as mock_fetch:
+            mock_fetch.return_value = mock_data
+
+            with patch.object(
+                signal_push_service, "push_signal", new_callable=AsyncMock
+            ) as mock_push:
+                mock_push.return_value = {"test_channel": MagicMock(success=True)}
+
+                strategy_service = StrategyService()
+                original_data_service = strategy_service.data_service
+                strategy_service.data_service = DataService()
+                strategy_service.data_service.fetch_data = mock_fetch
+
+                assert strategy_service.data_service is not None
+                assert strategy_service.factor_service is not None
+
+                result = await strategy_service.run_backtest(
+                    strategy_name="DualMovingAverageStrategy",
+                    symbol="000001.SZ",
+                    start_date="2024-01-01",
+                    end_date="2024-01-31",
+                    initial_capital=1000000.0,
+                    mode=TradingMode.BACKTEST,
+                )
+
+                strategy_service.data_service = original_data_service
+
+                assert result is not None
+                assert result["strategy_name"] == "DualMovingAverageStrategy"
+                assert "performance" in result
+
+                assert mock_fetch.called
