@@ -2,7 +2,6 @@
 Strategy service for managing and running strategies
 """
 
-import os
 import importlib
 import inspect
 from typing import Dict, Any, Optional, Type, List
@@ -28,6 +27,20 @@ from app.core.config import settings
 logger = get_logger(__name__)
 
 
+_DATA_GROUP_REGISTRY: Dict[str, Type[DataGroup]] = {}
+
+
+def register_data_group_type(group_type: str, group_class: Type[DataGroup]):
+    """
+    Register a DataGroup type for factory creation
+
+    Args:
+        group_type: Type name (e.g., "DailyDataGroup")
+        group_class: DataGroup class
+    """
+    _DATA_GROUP_REGISTRY[group_type] = group_class
+
+
 def create_data_group_from_config(config: Dict[str, Any]) -> DataGroup:
     """
     Factory function to create DataGroup instance from configuration
@@ -41,15 +54,22 @@ def create_data_group_from_config(config: Dict[str, Any]) -> DataGroup:
     from app.domains.strategies.data_group import DataGroup
     from app.domains.strategies.daily_data_group import DailyDataGroup
 
+    if not _DATA_GROUP_REGISTRY:
+        register_data_group_type("DailyDataGroup", DailyDataGroup)
+
     group_type = config.get("type")
-    if group_type == "DailyDataGroup":
-        return DailyDataGroup(
-            name=config["name"],
-            weight=config.get("weight", 1.0),
-            factors=config.get("factors", []),
+    if group_type not in _DATA_GROUP_REGISTRY:
+        raise ValueError(
+            f"Unsupported DataGroup type: {group_type}. "
+            f"Available types: {list(_DATA_GROUP_REGISTRY.keys())}"
         )
-    else:
-        raise ValueError(f"Unsupported DataGroup type: {group_type}")
+
+    group_class = _DATA_GROUP_REGISTRY[group_type]
+    return group_class(
+        name=config["name"],
+        weight=config.get("weight", 1.0),
+        factors=config.get("factors", []),
+    )
 
 
 class StrategyService:

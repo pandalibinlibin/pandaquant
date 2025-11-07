@@ -10,7 +10,6 @@ import backtrader as bt
 from app.domains.data.services import DataService, data_service
 from app.domains.factors.services import FactorService, factor_service
 from app.domains.strategies.data_group import DataGroup
-from app.domains.strategies.daily_data_group import DailyDataGroup
 from app.domains.strategies.enums import TradingMode
 from app.domains.signals.services import signal_push_service
 from app.core.logging import get_logger
@@ -60,45 +59,6 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
     def _init_data_groups(self):
         """Initialize data groups for this strategy"""
         pass
-
-    async def prepare_all_data_groups(
-        self, symbol: str, start_date: str, end_date: str
-    ):
-        """
-        Prepare data for all DataGroups - fetch data and calculate factors
-
-        Each DataGroup prepares its own data independently
-        """
-
-        for group in self.data_groups:
-            data = await group.prepare_data(
-                symbol=symbol, start_date=start_date, end_date=end_date
-            )
-
-        logger.info(
-            f"Data preparation completed for {len(self.data_groups)} data groups"
-        )
-
-    def get_backtrader_feeds(self) -> List[bt.feeds.DataBase]:
-        """
-        Get all Backtrader data feeds from prepared DataGroups
-
-        Also builds the mapping from data index to group name
-        """
-
-        feeds = []
-        for i, group in enumerate(self.data_groups):
-            try:
-                feed = group.to_backtrader_feed()
-                feeds.append(feed)
-                self._data_index_to_group[i] = group.name
-                feed._data_group_name = group.name
-                logger.debug(f"Mapped data index{i} to group '{group.name}'")
-            except ValueError as e:
-                logger.warning(f"Skipping DataGroup {group.name} due to error: {e}")
-                continue
-
-        return feeds
 
     def _get_group_name(self, data_index: int) -> Optional[str]:
         """

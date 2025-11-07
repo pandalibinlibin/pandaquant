@@ -111,9 +111,14 @@ class DailyDataGroup(DataGroup):
             openinterest=-1,
         )
 
+        # Map factor columns to Backtrader lines indices
+        # Backtrader PandasData lines structure:
+        # lines[0]: datetime, lines[1]: open, lines[2]: high, lines[3]: low,
+        # lines[4]: close, lines[5]: volume, lines[6]: openinterest
+        # Factor columns start from lines[6] (even if openinterest=-1, the position exists)
         feed._factor_cols = {}
         for i, col in enumerate(factor_cols):
-            line_idx = 6 + i
+            line_idx = 6 + i  # Factor columns: lines[6], lines[7], lines[8], ...
             feed._factor_cols[col] = line_idx
 
         feed._factor_col_names = factor_cols
@@ -164,32 +169,34 @@ class DailyDataGroup(DataGroup):
 
         from app.domains.factors.technical import MovingAverageFactor
 
+        factor_factories = {
+            ("MA", "technical"): lambda params: MovingAverageFactor(
+                period=params.get("period", 20),
+                ma_type=params.get("ma_type", "SMA"),
+            ),
+        }
+
         for factor_config in self.factors:
             factor_name = factor_config.get("name")
             factor_type = factor_config.get("type")
             factor_params = factor_config.get("params", {})
 
             period = factor_params.get("period", 20)
-            factor_key = f"{factor_name}_{period}"
-            if factor_key in self._factor_objects:
+            factor_cache_key = f"{factor_name}_{period}"
+            if factor_cache_key in self._factor_objects:
                 continue
 
             try:
-                if factor_name == "MA" and factor_type == "technical":
-                    unique_name = f"{self.name}_{factor_name}_{period}_SMA"
-                    factor_obj = MovingAverageFactor(
-                        period=period,
-                        ma_type="SMA",
-                    )
-                    factor_obj.name = unique_name
-                else:
+                factory_key = (factor_name, factor_type)
+                if factory_key not in factor_factories:
                     logger.warning(
                         f"Unknown factor: name={factor_name}, type={factor_type}, params={factor_params}, skipping..."
                     )
                     continue
 
+                factor_obj = factor_factories[factory_key](factor_params)
                 self.factor_service.register_factor(factor_obj)
-                self._factor_objects[factor_key] = factor_obj
+                self._factor_objects[factor_cache_key] = factor_obj
                 logger.debug(
                     f"Created and registered factor {factor_name} for group {self.name}"
                 )
