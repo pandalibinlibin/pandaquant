@@ -453,6 +453,39 @@
 - Alembic数据库版本控制
 - 完整的迁移历史记录
 
+### 9. 数据管理API层 ✅
+
+#### 文件位置
+
+- `backend/app/api/routes/data.py` - 数据管理API路由
+- `backend/tests/api/routes/test_data.py` - 数据管理API测试（3个测试用例）
+
+#### 核心功能
+
+- **股票数据API** (`POST /api/v1/data/stock`)：
+  - 支持日线数据（daily）
+  - 支持分钟数据（minute，可指定频率：1min, 5min, 15min, 30min, 60min）
+  - 支持财务数据（financial）
+  - 统一的缓存控制参数
+
+- **宏观数据API** (`POST /api/v1/data/macro`)：
+  - 支持GDP、CPI、PPI、M2、利率等宏观指标
+  - 时间范围查询
+  - 缓存支持
+
+- **行业/概念数据API** (`POST /api/v1/data/industry-concept`)：
+  - 获取行业分类数据
+  - 获取概念板块数据
+  - 缓存支持
+
+#### 技术特点
+
+- 基于现有DataService封装，复用数据层能力
+- 统一的请求/响应模型设计
+- 支持用户认证和权限控制
+- 完整的测试覆盖（3个测试用例全部通过）
+- 返回标准化JSON格式（data, count, columns）
+
 ## 待完成的功能模块
 
 ### 1. 数据源扩展 🔄
@@ -680,6 +713,14 @@
     - 深入解释Strategy与Backtrader集成：六层架构、数据访问、因子访问、时间对齐等核心概念
     - 提供完整的代码示例和最佳实践：确保开发者能够轻松扩展系统
     - 包含常见问题和参考文件：帮助开发者快速定位和解决问题
+53. 数据管理API层实现
+    - 创建data.py路由文件：实现数据管理API端点
+    - 股票数据API：支持daily/minute/financial三种数据类型，支持分钟数据频率配置
+    - 宏观数据API：支持GDP/CPI/PPI/M2/利率等宏观指标查询
+    - 行业/概念数据API：支持行业分类和概念板块数据获取
+    - 统一请求/响应模型：StockDataRequest、MacroDataRequest、IndustryConceptDataRequest、DataResponse
+    - 完整测试覆盖：3个测试用例全部通过，验证所有端点功能
+    - 集成到主API路由：在main.py中注册data路由
 
 ### 进行中 🔄
 
