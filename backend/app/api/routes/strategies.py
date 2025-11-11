@@ -97,7 +97,27 @@ def list_strategies(
     current_user: CurrentUser,
 ) -> Any:
     """
-    List all available strategies
+    List all available trading strategies
+
+    Returns a comprehensive list of all registered trading strategies
+    that can be used for backtesting and live trading.
+
+    **Returns:**
+    - **data**: List of strategy information with name and description
+    - **count**: Total number of available strategies
+
+    **Example Response:**
+    ```json
+    {
+        "data": [
+            {
+                "name": "rsi_mean_reversion",
+                "description": "RSI-based mean reversion strategy"
+            }
+        ],
+        "count": 1
+    }
+    ```
     """
     try:
         strategy_names = strategy_service.list_strategies()
@@ -120,7 +140,31 @@ def get_strategy(
     current_user: CurrentUser,
 ) -> Any:
     """
-    Get strategy details by name
+    Get detailed information about a specific strategy
+
+    Retrieves comprehensive details about a single trading strategy
+    including its description, parameters, and configuration options.
+
+    **Path Parameters:**
+    - **strategy_name**: Name of the strategy to retrieve
+
+    **Returns:**
+    - **name**: Strategy name (identifier)
+    - **description**: Detailed strategy description from docstring
+
+    **Example:**
+    GET /strategies/rsi_mean_reversion
+
+    **Response:**
+    ```json
+    {
+        "name": "rsi_mean_reversion",
+        "description": "RSI-based mean reversion strategy that trades based on overbought/oversold conditions"
+    }
+    ```
+
+    **Error Responses:**
+    - 404: Strategy not found
     """
     from fastapi import HTTPException
 
@@ -143,7 +187,48 @@ async def run_backtest(
     current_user: CurrentUser,
 ) -> Any:
     """
-    Run a backtest for a specific strategy
+    Run a backtest for a specific trading strategy
+
+    Executes a historical backtest of the specified strategy using
+    the provided parameters and returns comprehensive performance metrics.
+
+    **Path Parameters:**
+    - **strategy_name**: Name of the strategy to backtest
+
+    **Request Body:**
+    - **symbol**: Stock symbol (e.g., "000001.SZ")
+    - **start_date**: Backtest start date (YYYY-MM-DD)
+    - **end_date**: Backtest end date (YYYY-MM-DD)
+    - **initial_capital**: Starting capital amount (default: 1000000.0)
+    - **commission**: Commission rate (default: 0.0003)
+    - **commtype**: Commission type - "PERC" or "FIXED" (default: "PERC")
+    - **commmin**: Minimum commission (default: 5.0)
+    - **stocklike**: Whether instrument is stock-like (default: true)
+    - **leverage**: Leverage ratio (default: 1.0)
+    - **margin**: Margin requirement (optional)
+    - **mode**: Trading mode (default: "BACKTEST")
+
+    **Returns:**
+    - **backtest_id**: Unique identifier for the backtest result
+    - **strategy_name**: Name of the backtested strategy
+    - **performance**: Comprehensive performance metrics
+    - **chart_path**: Path to performance chart (if generated)
+    - **status**: Backtest execution status
+
+    **Example Request:**
+    ```json
+    {
+        "symbol": "000001.SZ",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "initial_capital": 1000000.0
+    }
+    ```
+
+    **Error Responses:**
+    - 404: Strategy not found
+    - 400: Invalid parameters or data
+    - 500: Server error during backtest execution
     """
     from fastapi import HTTPException
 
@@ -195,3 +280,16 @@ async def run_backtest(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error running backtest: {str(e)}")
+
+
+@router.get("/{strategy_name}/backtest/{backtest_id}", response_model=BacktestResponse)
+def get_backtest_result(
+    strategy_name: str,
+    backtest_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get backtest result by ID
+    """
+    pass

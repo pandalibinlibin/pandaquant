@@ -61,7 +61,36 @@ async def fetch_stock_data(
     session: SessionDep,
 ) -> DataResponse:
     """
-    Fetch stock data (daily, minute, financial) with caching support
+    Fetch stock market data with caching support
+
+    Supports three types of stock data:
+    - **daily**: Daily OHLCV data with basic indicators
+    - **minute**: Intraday minute-level data (1min, 5min, 15min, 30min, 60min)
+    - **financial**: Financial statement data and ratios
+
+    **Parameters:**
+    - **data_type**: Type of data to fetch (daily/minute/financial)
+    - **symbol**: Stock symbol in format like "000001.SZ" or "600000.SS"
+    - **start_date**: Start date in YYYY-MM-DD format
+    - **end_date**: End date in YYYY-MM-DD format
+    - **freq**: Frequency for minute data (only required when data_type='minute')
+    - **use_cache**: Whether to use cached data if available (default: true)
+
+    **Returns:**
+    - **data**: List of data records with OHLCV and other fields
+    - **count**: Total number of records returned
+    - **columns**: List of available column names
+
+    **Example:**
+    ```json
+    {
+        "data_type": "daily",
+        "symbol": "000001.SZ",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "use_cache": true
+    }
+    ```
     """
     kwargs = {
         "data_type": request.data_type,
@@ -94,6 +123,36 @@ async def fetch_macro_data(
 ) -> DataResponse:
     """
     Fetch macro economic data with caching support
+
+    Provides access to key macroeconomic indicators from official sources:
+    - **gdp**: Gross Domestic Product data
+    - **cpi**: Consumer Price Index (inflation indicator)
+    - **ppi**: Producer Price Index (wholesale inflation)
+    - **m2**: Money Supply M2 (monetary policy indicator)
+    - **interest_rate**: SHIBOR interest rates (market rates)
+
+    **Parameters:**
+    - **data_type**: Always "macro" for this endpoint
+    - **indicator**: Specific macro indicator to fetch (gdp/cpi/ppi/m2/interest_rate)
+    - **start_date**: Start date in YYYY-MM-DD format
+    - **end_date**: End date in YYYY-MM-DD format
+    - **use_cache**: Whether to use cached data if available (default: true)
+
+    **Returns:**
+    - **data**: List of macro data records with timestamp and values
+    - **count**: Total number of records returned
+    - **columns**: List of available column names
+
+    **Example:**
+    ```json
+    {
+        "data_type": "macro",
+        "indicator": "cpi",
+        "start_date": "2023-01-01",
+        "end_date": "2023-12-31",
+        "use_cache": true
+    }
+    ```
     """
     df = await data_service.fetch_data(
         data_type=request.data_type,
@@ -118,7 +177,32 @@ async def fetch_industry_concept_data(
     request: IndustryConceptDataRequest, current_user: CurrentUser, session: SessionDep
 ) -> DataResponse:
     """
-    Fetch industry or concept data
+    Fetch industry classification and concept sector data
+
+    Provides access to market classification data:
+    - **industry**: Industry classification data (traditional sectors like finance, technology, etc.)
+    - **concept**: Concept sector data (thematic sectors like AI, new energy, etc.)
+
+    This endpoint returns static reference data that doesn't require time range parameters.
+
+    **Parameters:**
+    - **data_type**: Type of classification data (industry/concept)
+    - **use_cache**: Whether to use cached data if available (default: true)
+
+    **Returns:**
+    - **data**: List of classification records with codes, names, and descriptions
+    - **count**: Total number of records returned
+    - **columns**: List of available column names
+
+    **Example:**
+    ```json
+    {
+        "data_type": "industry",
+        "use_cache": true
+    }
+    ```
+
+    **Note:** This endpoint returns reference data and doesn't require start_date/end_date parameters.
     """
     df = await data_service.fetch_data(
         data_type=request.data_type,
