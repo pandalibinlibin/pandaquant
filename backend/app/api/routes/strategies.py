@@ -10,7 +10,7 @@ from app.domains.strategies.services import StrategyService
 
 strategy_service = StrategyService()
 
-from typing import Any
+from typing import Any, List
 from app.api.deps import CurrentUser, SessionDep
 from pydantic import BaseModel
 from typing import Optional
@@ -282,7 +282,7 @@ async def run_backtest(
         raise HTTPException(status_code=500, detail=f"Error running backtest: {str(e)}")
 
 
-@router.get("/{strategy_name}/backtest/{backtest_id}", response_model=BacktestResponse)
+@router.get("/{strategy_name}/backtests/{backtest_id}", response_model=BacktestResponse)
 def get_backtest_result(
     strategy_name: str,
     backtest_id: str,
@@ -290,6 +290,285 @@ def get_backtest_result(
     current_user: CurrentUser,
 ) -> Any:
     """
-    Get backtest result by ID
+    Get detailed backtest result by ID
+
+    Retrieves comprehensive backtest results including performance metrics,
+    trade statistics, and chart data for a specific backtest execution.
+
+    **Path Parameters:**
+    - **strategy_name**: Name of the strategy
+    - **backtest_id**: Unique identifier of the backtest result (UUID)
+
+    **Returns:**
+    - **backtest_id**: Unique identifier for the backtest
+    - **strategy_name**: Strategy name used in the backtest
+    - **symbol**: Stock symbol that was backtested
+    - **start_date**: Backtest start date
+    - **end_date**: Backtest end date
+    - **initial_capital**: Starting capital used
+    - **performance**: Detailed performance metrics
+    - **chart_path**: Path to performance chart (if available)
+    - **status**: Current status of the backtest
+
+    **Example:**
+    GET /strategies/rsi_mean_reversion/backtests/123e4567-e89b-12d3-a456-426614174000
+
+    **Error Responses:**
+    - 400: Invalid backtest ID format
+    - 404: Backtest result not found
     """
-    pass
+
+    from fastapi import HTTPException
+    from app.models import BacktestResult
+    from sqlmodel import select
+    from uuid import UUID
+    import json
+
+    try:
+        backtest_uuid = UUID(backtest_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid backtest ID format")
+
+    statement = select(BacktestResult).where(
+        BacktestResult.id == backtest_uuid,
+        BacktestResult.strategy_name == strategy_name,
+    )
+    result = session.exec(statement).first()
+
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Backtest result not found for strategy {strategy_name}",
+        )
+
+    result_data = json.loads(result.result_data) if result.result_data else {}
+    performance_data = result_data.get("performance", {})
+
+    performance_metrics = PerformanceMetrics(
+        total_return=result.total_return,
+        sharpe_ratio=result.sharpe_ratio,
+        max_drawdown=result.max_drawdown,
+        total_trades=result.total_trades,
+        winning_trades=result.winning_trades,
+        losing_trades=result.losing_trades,
+        win_rate=result.win_rate,
+        final_value=result.final_value,
+        **performance_data,
+    )
+
+    return BacktestResponse(
+        backtest_id=str(result.id),
+        strategy_name=result.strategy_name,
+        symbol=result.symbol,
+        start_date=result.start_date,
+        end_date=result.end_date,
+        initial_capital=result.initial_capital,
+        performance=performance_metrics,
+        chart_path=result_data.get("chart_path"),
+        status="completed",
+    )
+
+
+class BacktestHistoryItem(BaseModel):
+    """Backtest history item model"""
+
+    backtest_id: str
+    strategy_name: str
+    symbol: str
+    start_date: str
+    end_date: str
+    initial_capital: float
+    final_value: float
+    total_return: float
+    sharpe_ratio: float
+    max_drawdown: float
+    total_trades: int
+    win_rate: float
+    created_at: str
+
+
+class BacktestHistoryList(BaseModel):
+    """List of backtest history"""
+
+    data: List[BacktestHistoryItem]
+    count: int
+    page: int
+    size: int
+    total_pages: int
+
+
+@router.get("/{strategy_name}/backtests", response_model=BacktestHistoryList)
+def get_backtest_history(
+    strategy_name: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+    page: int = 1,
+    size: int = 20,
+) -> Any:
+    """
+    Get paginated list of backtest history for a strategy
+
+    Retrieves all historical backtest results for a specific strategy
+    with pagination support for efficient data retrieval.
+
+    **Path Parameters:**
+    - **strategy_name**: Name of the strategy
+
+    **Query Parameters:**
+    - **page**: Page number (default: 1, min: 1)
+    - **size**: Items per page (default: 20, max: 100)
+
+    **Returns:**
+    - **data**: List of backtest history items with key metrics
+    - **count**: Total number of backtest results
+    - **page**: Current page number
+    - **size**: Items per page
+    - **total_pages**: Total number of pages
+
+    **Example:**
+    GET /strategies/rsi_mean_reversion/backtests?page=1&size=10
+
+    **Response:**
+    ```json
+    {
+        "data": [
+            {
+                "backtest_id": "123e4567-e89b-12d3-a456-426614174000",
+                "strategy_name": "rsi_mean_reversion",
+                "symbol": "000001.SZ",
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+                "initial_capital": 1000000.0,
+                "final_value": 1050000.0,
+                "total_return": 0.05,
+                "sharpe_ratio": 1.2,
+                "max_drawdown": -0.03,
+                "total_trades": 25,
+                "win_rate": 0.6,
+                "created_at": "2023-12-31T23:59:59Z"
+            }
+        ],
+        "count": 1,
+        "page": 1,
+        "size": 20,
+        "total_pages": 1
+    }
+    ```
+    """
+    from fastapi import HTTPException
+    from app.models import BacktestResult
+    from sqlmodel import select, func
+    from datetime import datetime
+
+    if page < 1:
+        raise HTTPException(status_code=400, detail="Page must be >= 1")
+    if size < 1 or size > 100:
+        raise HTTPException(status_code=400, detail="Size must be between 1 and 100")
+
+    offset = (page - 1) * size
+
+    count_statement = select(func.count(BacktestResult.id)).where(
+        BacktestResult.strategy_name == strategy_name
+    )
+    total_count = session.exec(count_statement).one()
+
+    statement = (
+        select(BacktestResult)
+        .where(BacktestResult.strategy_name == strategy_name)
+        .order_by(BacktestResult.created_at.desc())
+        .offset(offset)
+        .limit(size)
+    )
+
+    results = session.exec(statement).all()
+
+    history_items = []
+    for result in results:
+        item = BacktestHistoryItem(
+            backtest_id=str(result.id),
+            strategy_name=result.strategy_name,
+            symbol=result.symbol,
+            start_date=result.start_date,
+            end_date=result.end_date,
+            initial_capital=result.initial_capital,
+            final_value=result.final_value,
+            total_return=result.total_return,
+            sharpe_ratio=result.sharpe_ratio,
+            max_drawdown=result.max_drawdown,
+            total_trades=result.total_trades,
+            win_rate=result.win_rate,
+            created_at=result.created_at.isoformat(),
+        )
+        history_items.append(item)
+
+    total_pages = (total_count + size - 1) // size
+
+    return BacktestHistoryList(
+        data=history_items,
+        count=total_count,
+        page=page,
+        size=size,
+        total_pages=total_pages,
+    )
+
+
+@router.delete("/{strategy_name}/backtests/{backtest_id}")
+def delete_backtest_result(
+    strategy_name: str,
+    backtest_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Delete a specific backtest result
+
+    Permanently removes a backtest result from the database.
+    This action cannot be undone.
+
+    **Path Parameters:**
+    - **strategy_name**: Name of the strategy
+    - **backtest_id**: Unique identifier of the backtest result (UUID)
+
+    **Returns:**
+    - **message**: Confirmation message indicating successful deletion
+
+    **Example:**
+    DELETE /strategies/rsi_mean_reversion/backtests/123e4567-e89b-12d3-a456-426614174000
+
+    **Response:**
+    ```json
+    {
+        "message": "Backtest result deleted successfully"
+    }
+    ```
+
+    **Error Responses:**
+    - 400: Invalid backtest ID format
+    - 404: Backtest result not found
+    """
+    from fastapi import HTTPException
+    from app.models import BacktestResult
+    from sqlmodel import select
+    from uuid import UUID
+
+    try:
+        backtest_uuid = UUID(backtest_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid backtest ID format")
+
+    statement = select(BacktestResult).where(
+        BacktestResult.id == backtest_uuid,
+        BacktestResult.strategy_name == strategy_name,
+    )
+    result = session.exec(statement).first()
+
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Backtest result not found for strategy {strategy_name}",
+        )
+
+    session.delete(result)
+    session.commit()
+
+    return {"message": "Backtest result deleted successfully"}

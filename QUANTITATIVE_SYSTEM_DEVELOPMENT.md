@@ -721,6 +721,15 @@
     - 统一请求/响应模型：StockDataRequest、MacroDataRequest、IndustryConceptDataRequest、DataResponse
     - 完整测试覆盖：3个测试用例全部通过，验证所有端点功能
     - 集成到主API路由：在main.py中注册data路由
+54. 策略管理API层实现
+    - 完成策略API路由层：实现策略管理的完整API端点
+    - 回测结果查询API：GET /api/v1/strategies/{strategy_name}/backtests/{backtest_id}，支持按ID查询详细回测结果
+    - 回测历史列表API：GET /api/v1/strategies/{strategy_name}/backtests，支持分页查询历史回测记录
+    - 删除回测结果API：DELETE /api/v1/strategies/{strategy_name}/backtests/{backtest_id}，支持删除指定回测结果
+    - 完整API文档：所有端点包含详细docstring，支持FastAPI自动生成OpenAPI文档
+    - 全面的错误处理：UUID格式验证、分页参数验证、资源不存在处理
+    - 完整测试覆盖：14个测试用例全部通过，包括成功场景和错误边界测试
+    - 正确的Mock实现：使用FastAPI dependency_overrides机制确保测试可靠性
 
 ### 进行中 🔄
 
@@ -729,17 +738,18 @@
 ### 待开始 📋
 
 1. 策略模板系统
-2. API路由层实现
-3. 前端界面开发
+2. 因子管理API
+3. 信号管理API
+4. 前端界面开发
 
 ## 下一步开发计划
 
 ### 短期目标（1-2周）
 
 1. API路由层实现
-   - 数据管理API
+   - 数据管理API ✅
    - 因子管理API
-   - 策略管理API
+   - 策略管理API ✅
    - 信号管理API
 2. 系统集成测试 ✅
    - 数据层集成测试 ✅
