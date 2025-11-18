@@ -486,6 +486,98 @@
 - 完整的测试覆盖（3个测试用例全部通过）
 - 返回标准化JSON格式（data, count, columns）
 
+### 10. 因子管理API层 ✅
+
+#### 文件位置
+
+- `backend/app/api/routes/factors.py` - 因子管理API路由
+- `backend/tests/api/routes/test_factors.py` - 因子管理API测试（18个测试用例）
+
+#### 核心功能
+
+- **因子列表API** (`GET /api/v1/factors/`)：
+  - 列出所有可用因子
+  - 支持按因子类型筛选（technical, fundamental, custom）
+  - 返回因子基本信息（名称、类型、描述、参数、状态）
+
+- **因子详情API** (`GET /api/v1/factors/{factor_name}`)：
+  - 获取特定因子的详细信息
+  - 包含因子描述、参数配置、必需字段等
+  - 支持因子不存在错误处理
+
+- **因子计算API** (`POST /api/v1/factors/calculate`)：
+  - 支持多种数据类型：daily, minute, financial, macro, industry, concept
+  - 数据类型分组处理：
+    - 第一组：daily, minute, financial（需要symbol + 时间范围）
+    - 第二组：macro（需要indicator + 时间范围）
+    - 第三组：industry, concept（不需要symbol/indicator和时间范围）
+  - 使用DataService.fetch_data()统一获取数据
+  - 完整的参数验证和错误处理
+
+- **因子状态API** (`GET /api/v1/factors/{factor_name}/status`)：
+  - 获取因子运行状态和统计信息
+  - 包含计算次数、成功率、错误信息等
+  - 支持因子监控和调试
+
+- **因子注册API** (`POST /api/v1/factors/register`)：
+  - 动态注册新因子到系统
+  - 支持因子类型、描述、参数配置
+  - 防止重复注册验证
+  - 使用Factor对象进行注册
+
+- **因子删除API** (`DELETE /api/v1/factors/{factor_name}`)：
+  - 删除/注销指定因子
+  - 支持因子不存在错误处理
+  - 完整的删除操作验证
+
+#### 技术特点
+
+- **统一数据类型支持**：与数据服务层保持一致的数据类型定义
+- **完整CRUD操作**：支持因子的创建、查询、更新、删除
+- **参数验证机制**：使用Pydantic模型进行严格的数据验证
+- **错误处理完善**：404、400、409、422、500等错误场景全覆盖
+- **测试覆盖完整**：18个测试用例全部通过，覆盖所有API端点和错误场景
+- **响应模型标准化**：统一的JSON响应格式，支持OpenAPI文档生成
+- **日志记录完整**：详细的操作日志和错误追踪
+
+### 11. 信号管理API层 ✅
+
+#### 文件位置
+
+- `backend/app/api/routes/signals.py` - 信号管理API路由
+- `backend/tests/api/routes/test_signals.py` - 信号管理API测试（9个测试用例）
+
+#### 核心功能
+
+- **信号列表API** (`GET /api/v1/signals/`)：
+  - 列出所有交易信号
+  - 支持按信号类型筛选（buy, sell, hold）
+  - 支持按交易标的筛选（symbol）
+  - 支持分页查询（page, size参数）
+  - 返回信号基本信息（ID、类型、标的、动作、置信度、时间戳、元数据）
+
+- **信号详情API** (`GET /api/v1/signals/{signal_id}`)：
+  - 获取特定信号的详细信息
+  - 包含信号的所有属性和元数据
+  - 支持信号不存在错误处理
+
+- **信号创建API** (`POST /api/v1/signals/`)：
+  - 创建新的交易信号
+  - 支持信号类型、标的、动作、置信度配置
+  - 支持自定义元数据扩展
+  - 使用SignalPushService进行信号处理
+
+#### 技术特点
+
+- **统一信号格式**：标准化的信号数据结构定义
+- **灵活筛选机制**：支持多维度信号筛选和查询
+- **分页查询支持**：大数据量下的高效分页处理
+- **参数验证完善**：使用Pydantic模型确保数据完整性
+- **错误处理全面**：401、404、500等错误场景覆盖
+- **测试覆盖完整**：9个测试用例全部通过，覆盖成功和失败场景
+- **认证集成**：完整的用户认证和权限控制
+- **服务层集成**：与SignalPushService深度集成
+
 ## 待完成的功能模块
 
 ### 1. 数据源扩展 🔄
@@ -730,6 +822,29 @@
     - 全面的错误处理：UUID格式验证、分页参数验证、资源不存在处理
     - 完整测试覆盖：14个测试用例全部通过，包括成功场景和错误边界测试
     - 正确的Mock实现：使用FastAPI dependency_overrides机制确保测试可靠性
+55. 因子管理API层完整实现
+    - 完成因子API路由层：实现因子管理的完整API端点
+    - 因子列表API：GET /api/v1/factors/，支持按类型筛选，返回所有可用因子
+    - 因子详情API：GET /api/v1/factors/{factor_name}，获取特定因子的详细信息
+    - 因子计算API：POST /api/v1/factors/calculate，支持6种数据类型的因子计算
+    - 因子状态API：GET /api/v1/factors/{factor_name}/status，获取因子运行状态和统计信息
+    - 因子注册API：POST /api/v1/factors/register，动态注册新因子到系统
+    - 因子删除API：DELETE /api/v1/factors/{factor_name}，删除/注销指定因子
+    - 数据类型分组处理：daily/minute/financial、macro、industry/concept三组不同的参数需求
+    - 完整参数验证：使用Pydantic模型进行严格的数据验证和错误处理
+    - 完整测试覆盖：18个测试用例全部通过，覆盖所有API端点和错误场景
+    - 统一错误处理：404、400、409、422、500等错误场景全覆盖
+56. 信号管理API层完整实现
+    - 完成信号API路由层：实现信号管理的完整API端点
+    - 信号列表API：GET /api/v1/signals/，支持类型、标的筛选和分页查询
+    - 信号详情API：GET /api/v1/signals/{signal_id}，获取特定信号的详细信息
+    - 信号创建API：POST /api/v1/signals/，创建新的交易信号
+    - 统一信号格式：标准化的信号数据结构定义（ID、类型、标的、动作、置信度、时间戳、元数据）
+    - 灵活筛选机制：支持多维度信号筛选和查询
+    - 分页查询支持：大数据量下的高效分页处理
+    - 完整测试覆盖：9个测试用例全部通过，覆盖成功和失败场景
+    - 认证集成：完整的用户认证和权限控制
+    - 服务层集成：与SignalPushService深度集成
 
 ### 进行中 🔄
 
@@ -738,24 +853,30 @@
 ### 待开始 📋
 
 1. 策略模板系统
-2. 因子管理API
-3. 信号管理API
-4. 前端界面开发
+2. 回测管理API增强
+3. 投资组合管理API
+4. 实盘交易API
+5. 前端界面开发
 
 ## 下一步开发计划
 
 ### 短期目标（1-2周）
 
-1. API路由层实现
+1. API路由层实现 ✅
    - 数据管理API ✅
-   - 因子管理API
+   - 因子管理API ✅
    - 策略管理API ✅
-   - 信号管理API
+   - 信号管理API ✅
 2. 系统集成测试 ✅
    - 数据层集成测试 ✅
    - 因子层集成测试 ✅
    - 策略层集成测试 ✅
    - 完整业务流程集成测试 ✅
+3. 下一步重点
+   - 回测管理API增强
+   - 投资组合管理API
+   - 实盘交易API
+   - 前端界面开发
 
 ### 中期目标（3-4周）
 
