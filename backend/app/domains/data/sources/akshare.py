@@ -61,6 +61,7 @@ class AkshareDataSource(DataSource):
 
     async def fetch_data(self, data_type: str, **kwargs) -> pd.DataFrame:
         try:
+            logger.info(f"AKShare fetch_data called with kwargs: {kwargs}")
             if not await self.validate_params(data_type, **kwargs):
                 return pd.DataFrame()
 
@@ -126,8 +127,10 @@ class AkshareDataSource(DataSource):
         self, symbol: str, start_date: str, end_date: str, **kwargs
     ) -> pd.DataFrame:
         try:
+
+            ak_symbol = symbol.split(".")[0] if "." in symbol else symbol
             df = ak.stock_zh_a_hist(
-                symbol=symbol,
+                symbol=ak_symbol,
                 period="daily",
                 start_date=start_date.replace("-", ""),
                 end_date=end_date.replace("-", ""),

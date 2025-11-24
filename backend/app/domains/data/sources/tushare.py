@@ -27,9 +27,13 @@ class TushareDataSource(DataSource):
             if not self.pro:
                 return False
 
-            test_data = self.pro.trade_cal(
-                exchange="SSE", start_date="20240101", end_date="20240102"
+            test_data = ts.pro_bar(
+                ts_code="000001.SZ",
+                start_date="20240101",
+                end_date="20240102",
+                adj="qfq",
             )
+
             return not test_data.empty
         except Exception as e:
             logger.error(f"Tushare health check failed: {e}")
@@ -106,11 +110,11 @@ class TushareDataSource(DataSource):
                 logger.error("Tushare pro API not initialized")
                 return pd.DataFrame()
 
-            df = self.pro.daily(
+            df = ts.pro_bar(
                 ts_code=symbol,
                 start_date=start_date.replace("-", ""),
                 end_date=end_date.replace("-", ""),
-                **kwargs,
+                adj="qfq",
             )
 
             if df.empty:

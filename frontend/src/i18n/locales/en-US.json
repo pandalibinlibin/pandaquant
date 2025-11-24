@@ -1,0 +1,45 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "data": "Data Management",
+    "factors": "Factor Management",
+    "strategies": "Strategy Management",
+    "signals": "Signal Monitoring",
+    "backtests": "Backtest Analysis",
+    "settings": "User Settings",
+    "admin": "Admin"
+  },
+  "data": {
+    "title": "Data Management",
+    "dataType": "Data Type",
+    "stockData": "Stock Data",
+    "stockDataDesc": "Daily OHLCV, intraday data, financial statements",
+    "macroData": "Macro Economic Data",
+    "macroDataDesc": "GDP, CPI, PPI, money supply, interest rates",
+    "industryData": "Industry Data",
+    "industryDataDesc": "Industry classification, concept sector information",
+    "currentSelection": "Current selected data type: ",
+    "parameterArea": "Parameter input area will be displayed here...",
+    "parameters": "Parameters",
+    "stockDaily": "Stock Daily",
+    "stockDailyDesc": "Daily OHLCV market data",
+    "stockMinute": "Stock Minute",
+    "stockMinuteDesc": "Intraday minute-level data (requires frequency)",
+    "stockFinancial": "Financial Data",
+    "stockFinancialDesc": "Financial statements and metrics",
+    "stockSymbol": "Stock Symbol",
+    "startDate": "Start Date",
+    "endDate": "End Date"
+  }
+}

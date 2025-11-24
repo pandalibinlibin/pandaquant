@@ -119,7 +119,181 @@
   - 避免API调用限额问题
   - 提高回测和策略执行速度
 
-### 3. 因子服务层 ✅
+### 3. 完整数据获取流程 ✅ (2025-11-23)
+
+#### 实现的功能
+
+**1. TuShare 数据源集成**
+- 使用 `ts.pro_bar` 免费接口（0积分要求）
+- 支持前复权日线数据获取（adj='qfq'）
+- 健康检查机制（自动验证数据源可用性）
+- 自动故障切换到备用数据源
+
+**2. AKShare 数据源集成**
+- 作为备用免费数据源
+- 股票代码格式自动转换（.SZ/.SH 后缀处理）
+- 完全免费使用，无需 Token
+
+**3. 数据源工厂模式优化**
+- 优先级管理（TuShare 优先级1，AKShare 优先级2）
+- 自动故障切换机制
+- 参数标准化和传递优化
+- Symbol 参数正确传递给所有数据源
+
+**4. 前端数据展示集成**
+- Bearer Token 认证机制
+- OpenAPI 客户端集成
+- 实时数据获取和展示
+- 错误处理和用户反馈
+
+**5. Docker 网络配置优化**
+- 使用 Docker 默认网络模式
+- DNS 解析问题解决
+- 容器间网络通信正常
+
+#### 文件位置
+
+- `backend/app/domains/data/sources/tushare.py` - TuShare 数据源（使用 pro_bar 接口）
+- `backend/app/domains/data/sources/akshare.py` - AKShare 数据源（股票代码转换）
+- `backend/app/domains/data/sources/factory.py` - 数据源工厂（参数传递优化）
+- `backend/app/api/routes/data.py` - 数据 API 路由
+- `frontend/src/components/Data/DataParameterForm.tsx` - 前端数据表单
+- `frontend/src/client/core/OpenAPI.ts` - OpenAPI 客户端配置
+
+#### 技术要点
+
+**网络配置**
+- Docker 网络模式：默认 bridge 模式
+- DNS 配置：使用系统默认 DNS
+- 容器网络：正常访问外部 API
+
+**数据源配置**
+- TuShare Token：配置在 `.env` 文件
+- 数据源优先级：TuShare (1) → AKShare (2)
+- 复权方式：前复权 (qfq)
+- 数据频率：日线 (daily)
+
+**认证机制**
+- 前端：Bearer Token 存储在 localStorage
+- API 调用：自动携带 Authorization 头
+- Token 刷新：自动处理过期
+
+**参数传递**
+- 前端表单：symbol, start_date, end_date
+- API 路由：标准化参数格式
+- 数据源：symbol 参数正确传递
+
+#### 测试结果
+
+**成功案例**（2025-11-23）
+```
+股票代码: 000001.SZ (平安银行)
+时间范围: 2024-01-01 至 2024-01-31
+数据条数: 22 条（工作日数据）
+数据来源: TuShare pro_bar 接口
+```
+
+**返回数据结构**
+```json
+{
+  "data": [
+    {
+      "ts_code": "000001.SZ",
+      "timestamp": "2024-01-02T00:00:00",
+      "open": 9.39,
+      "high": 9.42,
+      "low": 9.21,
+      "close": 9.30,
+      "vol": 123456,
+      "amount": 1234567.89
+    }
+  ],
+  "count": 22,
+  "columns": ["ts_code", "timestamp", "open", "high", "low", "close", ...]
+}
+```
+
+**数据质量验证**
+- ✅ 数据完整性：包含所有必要字段（OHLCV）
+- ✅ 数据合理性：价格在合理范围内
+- ✅ 时间序列：按日期正确排序
+- ✅ 字段标准化：统一的字段命名
+
+#### 完整数据流程
+
+```
+前端表单提交
+    ↓
+Bearer Token 认证
+    ↓
+API 路由处理 (/api/v1/data/stock)
+    ↓
+数据服务层 (DataService.fetch_data)
+    ↓
+数据源工厂 (DataSourceFactory.fetch_data_with_fallback)
+    ↓
+TuShare 健康检查 (ts.pro_bar 测试)
+    ↓
+TuShare 数据获取 (ts.pro_bar 接口)
+    ↓
+数据标准化 (字段映射和格式化)
+    ↓
+API 响应返回
+    ↓
+前端数据展示
+```
+
+#### 已解决的问题
+
+**1. 网络连接问题**
+- 问题：容器无法访问外部 API
+- 解决：使用默认 Docker 网络模式
+- 验证：成功访问 Google 和 TuShare API
+
+**2. TuShare 接口权限问题**
+- 问题：`daily` 接口需要 2000 积分
+- 解决：改用免费的 `pro_bar` 接口
+- 验证：成功获取日线数据
+
+**3. 参数传递问题**
+- 问题：symbol 参数未传递给数据源
+- 解决：在 factory.py 中显式传递 symbol
+- 验证：AKShare 和 TuShare 都能收到参数
+
+**4. 股票代码格式问题**
+- 问题：AKShare 不支持 .SZ/.SH 后缀
+- 解决：自动转换股票代码格式
+- 验证：AKShare 能正确处理股票代码
+
+**5. 前端认证问题**
+- 问题：API 调用返回 401 错误
+- 解决：使用 OpenAPI 客户端自动携带 Token
+- 验证：认证成功，数据正常返回
+
+#### 下一步优化方向
+
+**1. 数据展示优化**
+- 创建数据表格组件
+- 添加数据可视化（K线图）
+- 支持数据导出功能
+
+**2. 数据类型扩展**
+- 分钟线数据
+- 周线/月线数据
+- 财务数据
+- 宏观数据
+
+**3. 缓存机制优化**
+- 修复 InfluxDB 连接
+- 实现智能缓存策略
+- 减少外部 API 调用
+
+**4. 错误处理优化**
+- 更友好的错误提示
+- 自动重试机制
+- 降级策略完善
+
+### 4. 因子服务层 ✅
 
 #### 文件位置
 

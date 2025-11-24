@@ -1,0 +1,45 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "search": "查询"
+  },
+  "navigation": {
+    "dashboard": "仪表板",
+    "data": "数据管理",
+    "factors": "因子管理",
+    "strategies": "策略管理",
+    "signals": "信号监控",
+    "backtests": "回测分析",
+    "settings": "用户设置",
+    "admin": "管理员"
+  },
+  "data": {
+    "title": "数据管理",
+    "dataType": "数据类型",
+    "stockData": "股票数据",
+    "stockDataDesc": "日线行情，分钟级数据，财务数据",
+    "macroData": "宏观数据",
+    "macroDataDesc": "GDP, CPI, PPI, 货币供应量",
+    "industryData": "行业数据",
+    "industryDataDesc": "行业分类, 概念板块信息",
+    "currentSelection": "当前选择的数据类型:",
+    "parameterArea": "这里将显示对应的参数输入区域...",
+    "parameters": "参数设置",
+    "stockDaily": "股票日线",
+    "stockDailyDesc": "日线级别的OHLCV行情数据",
+    "stockMinute": "股票分钟",
+    "stockMinuteDesc": "分钟级别的分时行情数据（需选择频率）",
+    "stockFinancial": "财务数据",
+    "stockFinancialDesc": "财务报表与财务指标数据",
+    "stockSymbol": "股票代码",
+    "startDate": "开始日期",
+    "endDate": "结束日期"
+  }
+}

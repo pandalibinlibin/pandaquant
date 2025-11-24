@@ -68,7 +68,7 @@ class DataSourceFactory:
                     logger.warning(f"Source {source.name} is not available, skipping")
                     continue
 
-                data = await source.fetch_data(data_type, **kwargs)
+                data = await source.fetch_data(data_type, symbol=symbol, **kwargs)
 
                 if not data.empty:
                     data = await source.normalize_data(data, symbol, data_type)
