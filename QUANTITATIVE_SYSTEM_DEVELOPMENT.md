@@ -390,6 +390,58 @@ pytest tests/domains/data/sources/ -v -s -m integration
 - 方案 B：使用远程开发容器（VS Code Remote Containers）
 - 方案 C：仅在 Linux/macOS 环境使用 volume 挂载
 
+#### InfluxDB 配置与初始化 ✅ (2025-11-23)
+
+**问题：InfluxDB 未自动初始化**
+- 现象：InfluxDB 容器启动后未创建组织、存储桶和用户
+- 原因：使用了 InfluxDB 1.x 的环境变量，不适用于 InfluxDB 2.x
+
+**解决方案：配置 InfluxDB 2.x 自动初始化**
+
+修改 `docker-compose.yml` 中的 InfluxDB 配置：
+
+```yaml
+influxdb:
+  image: influxdb:2.7
+  restart: always
+  environment:
+    # InfluxDB 2.x 自动初始化配置
+    - DOCKER_INFLUXDB_INIT_MODE=setup
+    - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER}
+    - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD}
+    - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+    - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+    - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+  volumes:
+    - influxdb-data:/var/lib/influxdb2
+  ports:
+    - "8086:8086"
+```
+
+**配置说明**：
+- `DOCKER_INFLUXDB_INIT_MODE=setup` - 启用自动初始化模式
+- `DOCKER_INFLUXDB_INIT_USERNAME` - 初始管理员用户名（从 .env 读取）
+- `DOCKER_INFLUXDB_INIT_PASSWORD` - 初始管理员密码（从 .env 读取）
+- `DOCKER_INFLUXDB_INIT_ORG` - 初始组织名：`quantitative`
+- `DOCKER_INFLUXDB_INIT_BUCKET` - 初始存储桶名：`market_data`
+- `DOCKER_INFLUXDB_INIT_ADMIN_TOKEN` - 初始 API Token：`admin-token`
+
+**验证结果**（2025-11-23）：
+```
+✅ 组织（Organization）：quantitative (ID: b8aa4e8e61c1a513)
+✅ 存储桶（Bucket）：market_data (保留期：infinite)
+✅ 用户：admin
+✅ 写入测试：成功写入测试数据
+✅ 查询测试：成功读取测试数据
+```
+
+**优势**：
+- ✅ 首次启动自动初始化
+- ✅ 重启不会重复初始化（检测到已初始化会跳过）
+- ✅ 部署到任何环境都自动配置
+- ✅ 无需手动执行初始化命令
+- ✅ 配置统一从 .env 文件读取
+
 #### 下一步优化方向
 
 **1. 数据展示优化**
@@ -404,9 +456,11 @@ pytest tests/domains/data/sources/ -v -s -m integration
 - 宏观数据
 
 **3. 缓存机制优化**
-- 修复 InfluxDB 连接
+- ✅ 修复 InfluxDB 连接（已完成）
+- ✅ InfluxDB 自动初始化配置（已完成）
 - 实现智能缓存策略
 - 减少外部 API 调用
+- 添加缓存命中率监控
 
 **4. 错误处理优化**
 - 更友好的错误提示
