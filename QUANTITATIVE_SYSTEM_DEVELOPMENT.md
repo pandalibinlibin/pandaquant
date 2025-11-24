@@ -276,6 +276,7 @@ API 响应返回
 - `backend/tests/domains/data/sources/test_tushare_integration.py` - TuShare 集成测试
 - `backend/tests/domains/data/sources/test_akshare_integration.py` - AKShare 集成测试
 - `backend/tests/domains/data/sources/test_factory_integration.py` - 数据源工厂集成测试
+- `backend/tests/domains/data/services/test_data_service_integration.py` - 数据服务层集成测试
 
 **TuShare 集成测试（3个测试用例）**
 1. `test_tushare_initialization` - 数据源初始化验证
@@ -310,7 +311,21 @@ API 响应返回
    - 验证数据源状态信息获取
    - 验证状态包含优先级、状态、错误计数等信息
 
-**测试结果**（2025-11-23）
+**数据服务层集成测试（3个测试用例）**
+1. `test_service_initialization` - 服务初始化验证
+   - 验证 DataService 正确初始化
+   - 验证包含 InfluxDB 客户端和数据源工厂
+   - 验证 write_api 和 query_api 正确创建
+2. `test_fetch_data_without_cache` - 无缓存数据获取验证
+   - 验证绕过缓存直接从数据源获取数据
+   - 验证数据结构完整性
+   - 验证降级机制（数据源不可用时返回空 DataFrame）
+3. `test_fetch_data_with_cache_write` - InfluxDB 缓存读写验证
+   - 验证首次获取数据并写入 InfluxDB 缓存
+   - 验证二次获取从 InfluxDB 缓存读取数据
+   - 验证缓存命中日志：`Using cached data from InfluxDB`
+
+**测试结果**（2025-11-24）
 ```
 TuShare 测试: 3/3 通过 ✅
 - 成功初始化数据源
@@ -333,7 +348,14 @@ AKShare 测试: 7/7 通过 ✅
 - 健康检查通过（TuShare=True, AKShare=True）
 - 状态查询正常（包含优先级、状态、错误计数）
 
-总计: 15/15 集成测试通过 ✅
+数据服务层测试: 3/3 通过 ✅
+- 成功初始化 DataService（包含 InfluxDB 客户端和数据源工厂）
+- 无缓存模式：成功获取 7 行数据
+- InfluxDB 缓存写入：成功存储 4 行数据到 InfluxDB
+- InfluxDB 缓存读取：成功从缓存读取 3 行数据
+- 缓存命中验证：`Using cached daily data for 000001.SZ from InfluxDB`
+
+总计: 18/18 集成测试通过 ✅
 ```
 
 **测试特点**
@@ -343,17 +365,24 @@ AKShare 测试: 7/7 通过 ✅
 - ✅ 标记为 @pytest.mark.integration
 - ✅ 在 Docker 容器内运行
 - ✅ 验证数据质量和完整性
+- ✅ InfluxDB 缓存读写验证
+- ✅ 多数据源降级机制验证
 
 **运行测试命令**
 ```bash
 # 在 Docker 容器内运行
 docker exec -it pandaquant-backend-1 bash
+
+# 数据源测试
 pytest tests/domains/data/sources/test_tushare_integration.py -v -s
 pytest tests/domains/data/sources/test_akshare_integration.py -v -s
 pytest tests/domains/data/sources/test_factory_integration.py -v -s
 
-# 或运行所有集成测试
-pytest tests/domains/data/sources/ -v -s -m integration
+# 数据服务层测试
+pytest tests/domains/data/services/test_data_service_integration.py -v -s
+
+# 或运行所有数据相关集成测试
+pytest tests/domains/data/ -v -s -m integration
 ```
 
 **Docker 配置说明**（2025-11-23）
@@ -474,7 +503,10 @@ influxdb:
   - ✅ 优先级排序测试
   - ✅ 健康检查测试
   - ✅ 状态查询测试
-- 添加数据服务层集成测试
+- ✅ 数据服务层集成测试（已完成 - 3个测试用例）
+  - ✅ 服务初始化测试
+  - ✅ 无缓存数据获取测试
+  - ✅ InfluxDB 缓存读写测试
 - 添加 API 端到端测试
 
 ### 4. 因子服务层 ✅
