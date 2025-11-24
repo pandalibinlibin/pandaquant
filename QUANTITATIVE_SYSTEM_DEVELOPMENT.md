@@ -270,6 +270,63 @@ API 响应返回
 - 解决：使用 OpenAPI 客户端自动携带 Token
 - 验证：认证成功，数据正常返回
 
+#### 集成测试 ✅ (2025-11-23)
+
+**测试文件位置**
+- `backend/tests/domains/data/sources/test_tushare_integration.py` - TuShare 集成测试
+- `backend/tests/domains/data/sources/test_akshare_integration.py` - AKShare 集成测试
+
+**TuShare 集成测试（3个测试用例）**
+1. `test_tushare_initialization` - 数据源初始化验证
+2. `test_health_check_real_api` - 真实 API 健康检查
+3. `test_fetch_daily_data_real_api` - 真实日线数据获取
+
+**AKShare 集成测试（7个测试用例）**
+1. `test_akshare_initialization` - 数据源初始化验证
+2. `test_health_check_real_api` - 真实 API 健康检查
+3. `test_parameter_validation_valid` - 有效参数验证
+4. `test_parameter_validation_missing_symbol` - 缺失参数验证
+5. `test_fetch_daily_data_real_api` - 真实日线数据获取
+6. `test_fetch_data_with_symbol_suffix` - 股票代码后缀处理（.SZ/.SH）
+7. `test_get_available_data_types` - 可用数据类型查询
+
+**测试结果**（2025-11-23）
+```
+TuShare 测试: 3/3 通过 ✅
+- 成功初始化数据源
+- 健康检查返回 True
+- 成功获取 22 条数据（000001.SZ, 2024-01）
+
+AKShare 测试: 7/7 通过 ✅
+- 成功初始化数据源
+- 健康检查返回 False（SSL 错误，预期行为）
+- 参数验证正确工作
+- 成功获取 22 条数据（000001.SZ, 2024-01）
+- 成功处理 .SZ 和 .SH 后缀
+- 成功获取 8 种数据类型
+
+总计: 10/10 集成测试通过 ✅
+```
+
+**测试特点**
+- ✅ 使用真实 API 调用（非 Mock）
+- ✅ 端到端测试覆盖
+- ✅ 使用 logging 输出（符合规范）
+- ✅ 标记为 @pytest.mark.integration
+- ✅ 在 Docker 容器内运行
+- ✅ 验证数据质量和完整性
+
+**运行测试命令**
+```bash
+# 在 Docker 容器内运行
+docker exec -it pandaquant-backend-1 bash
+pytest tests/domains/data/sources/test_tushare_integration.py -v -s
+pytest tests/domains/data/sources/test_akshare_integration.py -v -s
+
+# 或运行所有集成测试
+pytest tests/domains/data/sources/ -v -s -m integration
+```
+
 #### 下一步优化方向
 
 **1. 数据展示优化**
@@ -292,6 +349,11 @@ API 响应返回
 - 更友好的错误提示
 - 自动重试机制
 - 降级策略完善
+
+**5. 测试覆盖扩展**
+- 添加数据源工厂集成测试
+- 添加数据服务层集成测试
+- 添加 API 端到端测试
 
 ### 4. 因子服务层 ✅
 
