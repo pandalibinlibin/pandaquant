@@ -275,6 +275,7 @@ API 响应返回
 **测试文件位置**
 - `backend/tests/domains/data/sources/test_tushare_integration.py` - TuShare 集成测试
 - `backend/tests/domains/data/sources/test_akshare_integration.py` - AKShare 集成测试
+- `backend/tests/domains/data/sources/test_factory_integration.py` - 数据源工厂集成测试
 
 **TuShare 集成测试（3个测试用例）**
 1. `test_tushare_initialization` - 数据源初始化验证
@@ -289,6 +290,12 @@ API 响应返回
 5. `test_fetch_daily_data_real_api` - 真实日线数据获取
 6. `test_fetch_data_with_symbol_suffix` - 股票代码后缀处理（.SZ/.SH）
 7. `test_get_available_data_types` - 可用数据类型查询
+
+**数据源工厂集成测试（1个测试用例）**
+1. `test_factory_initialization` - 工厂初始化验证
+   - 验证工厂自动初始化所有数据源
+   - 验证 TuShare 和 AKShare 数据源正确创建
+   - 验证数据源优先级正确设置（TuShare=1, AKShare=2）
 
 **测试结果**（2025-11-23）
 ```
@@ -305,7 +312,12 @@ AKShare 测试: 7/7 通过 ✅
 - 成功处理 .SZ 和 .SH 后缀
 - 成功获取 8 种数据类型
 
-总计: 10/10 集成测试通过 ✅
+数据源工厂测试: 1/1 通过 ✅
+- 成功初始化 2 个数据源（TuShare + AKShare）
+- TuShare 优先级 = 1
+- AKShare 优先级 = 2
+
+总计: 11/11 集成测试通过 ✅
 ```
 
 **测试特点**
@@ -322,10 +334,45 @@ AKShare 测试: 7/7 通过 ✅
 docker exec -it pandaquant-backend-1 bash
 pytest tests/domains/data/sources/test_tushare_integration.py -v -s
 pytest tests/domains/data/sources/test_akshare_integration.py -v -s
+pytest tests/domains/data/sources/test_factory_integration.py -v -s
 
 # 或运行所有集成测试
 pytest tests/domains/data/sources/ -v -s -m integration
 ```
+
+**Docker 配置说明**（2025-11-23）
+
+**问题：Volume 挂载导致 Docker 守护进程挂起**
+- 环境：Windows 10/11 + WSL2 + Docker Desktop
+- 现象：配置 `./backend:/app` volume 后，Docker 命令挂起无响应
+- 原因：跨文件系统（Windows ↔ WSL2）的 bind mount 导致文件监控风暴和 I/O 性能问题
+
+**临时解决方案**
+```yaml
+# docker-compose.yml - backend 服务
+# 临时注释掉 volume 挂载
+# volumes:
+#   - ./backend:/app
+#   - /app/.venv
+```
+
+**工作流程调整**
+1. **修改代码后重新构建**：
+   ```bash
+   docker compose build backend
+   docker compose up -d backend
+   ```
+
+2. **或在容器内直接开发**：
+   ```bash
+   docker exec -it pandaquant-backend-1 bash
+   # 在容器内编辑和测试
+   ```
+
+**长期解决方案**（待评估）
+- 方案 A：将项目移到 WSL 文件系统内（`~/pandaquant`）
+- 方案 B：使用远程开发容器（VS Code Remote Containers）
+- 方案 C：仅在 Linux/macOS 环境使用 volume 挂载
 
 #### 下一步优化方向
 
@@ -351,9 +398,10 @@ pytest tests/domains/data/sources/ -v -s -m integration
 - 降级策略完善
 
 **5. 测试覆盖扩展**
-- 添加数据源工厂集成测试
+- ✅ 数据源工厂集成测试（已完成）
 - 添加数据服务层集成测试
 - 添加 API 端到端测试
+- 添加工厂降级策略测试
 
 ### 4. 因子服务层 ✅
 
