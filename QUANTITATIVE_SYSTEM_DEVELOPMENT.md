@@ -277,6 +277,7 @@ API 响应返回
 - `backend/tests/domains/data/sources/test_akshare_integration.py` - AKShare 集成测试
 - `backend/tests/domains/data/sources/test_factory_integration.py` - 数据源工厂集成测试
 - `backend/tests/domains/data/services/test_data_service_integration.py` - 数据服务层集成测试
+- `backend/tests/api/routes/test_data_integration.py` - API 端到端集成测试
 
 **TuShare 集成测试（3个测试用例）**
 1. `test_tushare_initialization` - 数据源初始化验证
@@ -325,6 +326,14 @@ API 响应返回
    - 验证二次获取从 InfluxDB 缓存读取数据
    - 验证缓存命中日志：`Using cached data from InfluxDB`
 
+**API 端到端集成测试（1个测试用例）**
+1. `test_fetch_stock_data_with_real_api` - 完整链路端到端验证
+   - 验证 HTTP 认证（Bearer Token）
+   - 验证 API 路由调用（POST /api/v1/data/stock）
+   - 验证完整数据链路：API → DataService → DataSourceFactory → TuShare
+   - 验证响应结构（data, count, columns 字段）
+   - 验证数据完整性（timestamp, open, close 等列）
+
 **测试结果**（2025-11-24）
 ```
 TuShare 测试: 3/3 通过 ✅
@@ -355,7 +364,14 @@ AKShare 测试: 7/7 通过 ✅
 - InfluxDB 缓存读取：成功从缓存读取 3 行数据
 - 缓存命中验证：`Using cached daily data for 000001.SZ from InfluxDB`
 
-总计: 18/18 集成测试通过 ✅
+API 端到端测试: 1/1 通过 ✅
+- HTTP 认证成功：`POST /api/v1/login/access-token "HTTP/1.1 200 OK"`
+- API 调用成功：`POST /api/v1/data/stock "HTTP/1.1 200 OK"`
+- 完整链路验证：API → DataService → DataSourceFactory → TuShare
+- 数据获取成功：7 行数据通过 API 返回
+- 响应结构验证：包含 data、count、columns 字段
+
+总计: 19/19 集成测试通过 ✅
 ```
 
 **测试特点**
@@ -367,6 +383,7 @@ AKShare 测试: 7/7 通过 ✅
 - ✅ 验证数据质量和完整性
 - ✅ InfluxDB 缓存读写验证
 - ✅ 多数据源降级机制验证
+- ✅ HTTP 认证和 API 路由验证
 
 **运行测试命令**
 ```bash
@@ -381,8 +398,14 @@ pytest tests/domains/data/sources/test_factory_integration.py -v -s
 # 数据服务层测试
 pytest tests/domains/data/services/test_data_service_integration.py -v -s
 
+# API 端到端测试
+pytest tests/api/routes/test_data_integration.py -v -s
+
 # 或运行所有数据相关集成测试
 pytest tests/domains/data/ -v -s -m integration
+
+# 或运行所有集成测试
+pytest -v -s -m integration
 ```
 
 **Docker 配置说明**（2025-11-23）
@@ -507,7 +530,8 @@ influxdb:
   - ✅ 服务初始化测试
   - ✅ 无缓存数据获取测试
   - ✅ InfluxDB 缓存读写测试
-- 添加 API 端到端测试
+- ✅ API 端到端集成测试（已完成 - 1个测试用例）
+  - ✅ 完整链路端到端验证测试
 
 ### 4. 因子服务层 ✅
 
