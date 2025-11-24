@@ -291,11 +291,24 @@ API 响应返回
 6. `test_fetch_data_with_symbol_suffix` - 股票代码后缀处理（.SZ/.SH）
 7. `test_get_available_data_types` - 可用数据类型查询
 
-**数据源工厂集成测试（1个测试用例）**
+**数据源工厂集成测试（5个测试用例）**
 1. `test_factory_initialization` - 工厂初始化验证
    - 验证工厂自动初始化所有数据源
    - 验证 TuShare 和 AKShare 数据源正确创建
    - 验证数据源优先级正确设置（TuShare=1, AKShare=2）
+2. `test_fetch_with_fallback_mechanism` - 降级机制验证
+   - 验证多数据源降级逻辑
+   - 验证主数据源失败时自动切换到备用源
+   - 验证数据获取成功后的数据结构
+3. `test_source_priority_ordering` - 优先级排序验证
+   - 验证数据源按优先级排序
+   - 验证 TuShare（优先级1）在 AKShare（优先级2）之前
+4. `test_health_check_all_sources` - 健康检查验证
+   - 验证所有数据源的健康检查功能
+   - 验证至少一个数据源可用
+5. `test_get_source_status` - 状态查询验证
+   - 验证数据源状态信息获取
+   - 验证状态包含优先级、状态、错误计数等信息
 
 **测试结果**（2025-11-23）
 ```
@@ -312,12 +325,15 @@ AKShare 测试: 7/7 通过 ✅
 - 成功处理 .SZ 和 .SH 后缀
 - 成功获取 8 种数据类型
 
-数据源工厂测试: 1/1 通过 ✅
+数据源工厂测试: 5/5 通过 ✅
 - 成功初始化 2 个数据源（TuShare + AKShare）
-- TuShare 优先级 = 1
-- AKShare 优先级 = 2
+- TuShare 优先级 = 1，AKShare 优先级 = 2
+- 降级机制正常工作，成功获取 22 条数据
+- 优先级排序正确（TuShare 优先于 AKShare）
+- 健康检查通过（TuShare=True, AKShare=True）
+- 状态查询正常（包含优先级、状态、错误计数）
 
-总计: 11/11 集成测试通过 ✅
+总计: 15/15 集成测试通过 ✅
 ```
 
 **测试特点**
@@ -398,10 +414,14 @@ pytest tests/domains/data/sources/ -v -s -m integration
 - 降级策略完善
 
 **5. 测试覆盖扩展**
-- ✅ 数据源工厂集成测试（已完成）
+- ✅ 数据源工厂集成测试（已完成 - 5个测试用例）
+  - ✅ 工厂初始化测试
+  - ✅ 降级机制测试
+  - ✅ 优先级排序测试
+  - ✅ 健康检查测试
+  - ✅ 状态查询测试
 - 添加数据服务层集成测试
 - 添加 API 端到端测试
-- 添加工厂降级策略测试
 
 ### 4. 因子服务层 ✅
 
