@@ -117,12 +117,27 @@ class TushareDataSource(DataSource):
                 adj="qfq",
             )
 
+            logger.info(
+                f"Tushare raw response for {symbol} ({start_date} to {end_date}):"
+            )
+            if not df.empty:
+                logger.info(f"Raw data shape: {df.shape}")
+                logger.info(f"Raw data columns: {df.columns.tolist()}")
+                logger.info(f"Raw trade_date value: {df['trade_date'].tolist()}")
+                logger.info(f"First 3 rows of raw data:")
+                logger.info(f"{df.head(3).to_dict('records')}")
+            else:
+                logger.info("Tushare returned empty DataFrame")
+
             if df.empty:
                 return pd.DataFrame()
 
             df = df.sort_values("trade_date")
             df["trade_date"] = pd.to_datetime(df["trade_date"], format="%Y%m%d")
             df = df.rename(columns={"trade_date": "timestamp"})
+
+            if "amount" in df.columns:
+                df["amount"] = df["amount"] * 1000
 
             return df
 

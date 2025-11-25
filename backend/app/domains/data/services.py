@@ -51,6 +51,10 @@ class DataService:
                         f"Using cached {data_type} data for {symbol} from InfluxDB"
                     )
                     return cached_data
+                else:
+                    logger.info(
+                        f"No cached data found for {symbol}, fetching from data source"
+                    )
 
             logger.info(f"Fetching {data_type} data for {symbol} from data source")
             data = await self.data_source_factory.fetch_data_with_fallback(
@@ -89,6 +93,13 @@ class DataService:
         fields: List[str] = None,
     ) -> bool:
         try:
+            logger.info(
+                f"About to write {len(data)} rows to InfluxDB for measurement: {measurement}"
+            )
+            logger.info(
+                f"Data timestamps: {data['timestamp'].tolist() if 'timestamp' in data.columns else 'No timestamp column'}"
+            )
+
             points = []
             for _, row in data.iterrows():
                 point = Point(measurement)
@@ -103,6 +114,9 @@ class DataService:
                             point = point.field(field, row[field])
 
                 if "timestamp" in row and pd.notna(row["timestamp"]):
+                    logger.info(
+                        f"InfluxDB write - Row data: symbol={row.get('symbol', 'N/A')}, timestamp={row['timestamp']}, timestamp_type={type(row['timestamp'])}"
+                    )
                     point = point.time(row["timestamp"])
 
                 points.append(point)
@@ -129,9 +143,12 @@ class DataService:
         fields: List[str] = None,
     ) -> pd.DataFrame:
         try:
+            end_date_plus_one = (
+                datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            ).strftime("%Y-%m-%d")
             query = f"""
             from(bucket: "{self.influxdb_bucket}")
-            |> range(start: {start_date}, stop: {end_date})
+            |> range(start: {start_date}, stop: {end_date_plus_one})
             |> filter(fn: (r) => r["_measurement"] == "{measurement}")
             """
 
@@ -155,8 +172,22 @@ class DataService:
             if result.empty:
                 return pd.DataFrame()
 
+            logger.info(f"InfluxDB read - Retrieved {len(result)} rows from cache")
+            logger.info(
+                f"InfluxDB read - Raw timestamps: {result['_time'].tolist() if '_time' in result.columns else 'No _time column'}"
+            )
+
             result = result.rename(columns={"_time": "timestamp"})
+
+            logger.info(
+                f"InfluxDB read - After rename timestamps: {result['timestamp'].tolist() if 'timestamp' in result.columns else 'No timestamp column'}"
+            )
+
             result = result.sort_values("timestamp")
+
+            logger.info(
+                f"InfluxDB read - After sort timestamps: {result['timestamp'].tolist() if 'timestamp' in result.columns else 'No timestamp column'}"
+            )
 
             return result
 

@@ -56,7 +56,7 @@ function StockDataTable({ data, loading, error }: StockDataTableProps) {
 
       {/* 股票数据表格 */}
       <Box overflowX="auto" borderWidth={1} borderRadius="md">
-        <Table.Root variant="simple" size="sm">
+        <Table.Root size="sm">
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeader>{t("data.symbol")}</Table.ColumnHeader>
@@ -78,7 +78,7 @@ function StockDataTable({ data, loading, error }: StockDataTableProps) {
                   {row.symbol || row.ts_code || "-"}
                 </Table.Cell>
                 <Table.Cell fontWeight="medium">
-                  {new Date(row.timestamp).toLocaleDateString("zh-CN")}
+                  {row.timestamp.split("T")[0].replace(/-/g, "/")}
                 </Table.Cell>
                 <Table.Cell>{row.open?.toFixed(2) || "-"}</Table.Cell>
                 <Table.Cell fontWeight="medium">
