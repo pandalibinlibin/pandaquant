@@ -13,11 +13,16 @@ export default defineConfig({
   plugins: [
     tanstackRouter({
       target: "react",
-      autoCodeSplitting: true,
+      autoCodeSplitting: false,
+      routesDirectory: "./src/routes",
+      generatedRouteTree: "./src/routeTree.gen.ts",
     }),
     react(),
   ],
+
   server: {
+    host: "0.0.0.0",
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://localhost:8000",

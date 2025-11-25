@@ -1614,3 +1614,113 @@ influxdb:
 - 因子状态监控面板
 
 **基于已完成的数据管理基础**，因子管理模块的开发将更加高效，预计开发周期可以显著缩短。
+
+---
+
+## 前端开发环境问题解决记录 (2024-11-25)
+
+### 🚨 TanStack Router 动态导入问题
+
+**问题描述**：
+在本地开发环境中，访问特定路由页面时出现模块加载失败错误：
+```
+Failed to fetch dynamically imported module: 
+http://localhost:5173/src/routes/_layout/data.tsx?tsr-split=component
+```
+
+**影响范围**：
+- ❌ 数据管理页面 (`/_layout/data`)
+- ❌ 用户设置页面 (`/_layout/settings`)
+- ✅ 其他页面正常工作
+
+**环境差异**：
+- ✅ Docker 容器环境：正常工作（使用构建后的静态文件）
+- ❌ 本地 npm run dev：模块加载失败（使用 Vite 开发服务器）
+
+### 🔍 问题根源分析
+
+**技术原因**：
+1. **TanStack Router 自动代码分割**：`autoCodeSplitting: true` 在开发环境与 Vite 的模块解析产生冲突
+2. **动态导入机制**：`?tsr-split=component` 标识的动态导入在本地开发服务器中失败
+3. **网络配置缺失**：缺少 `host` 和 `port` 的明确配置导致模块加载路径问题
+
+**为什么 Docker 环境正常**：
+- Docker 使用 `npm run build` 构建的生产版本
+- 代码分割在构建时已完成，通过 Nginx 提供静态文件服务
+- 避免了开发服务器的动态模块解析问题
+
+### ✅ 解决方案
+
+**修改 `frontend/vite.config.ts` 配置**：
+
+```typescript
+export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  plugins: [
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: false,           // 关键修改：禁用自动代码分割
+      routesDirectory: "./src/routes",     // 明确路由目录
+      generatedRouteTree: "./src/routeTree.gen.ts", // 明确路由树文件
+    }),
+    react(),
+  ],
+  server: {
+    host: "0.0.0.0",                     // 允许外部访问
+    port: 5173,                          // 明确端口配置
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
+  },
+});
+```
+
+**配置修改说明**：
+1. **`autoCodeSplitting: false`**：禁用 TanStack Router 的自动代码分割功能
+2. **`routesDirectory`**：明确指定路由文件目录，避免路径解析错误
+3. **`generatedRouteTree`**：明确指定生成的路由树文件位置
+4. **`host: "0.0.0.0"`**：解决网络访问和模块加载问题
+5. **`port: 5173`**：明确端口，避免冲突
+
+### 📊 解决效果
+
+**修复后验证**：
+- ✅ 数据管理页面正常加载
+- ✅ 用户设置页面正常加载
+- ✅ 其他页面继续正常工作
+- ✅ 开发服务器稳定运行
+- ✅ 模块热更新功能正常
+
+**性能影响**：
+- 初始包体积稍有增加（所有路由组件静态打包）
+- 开发体验显著改善（无动态加载错误）
+- 构建稳定性提升（避免代码分割冲突）
+
+### 💡 技术经验总结
+
+**开发环境调试技巧**：
+1. **错误信息分析**：从 URL 参数 `?tsr-split=component` 识别 TanStack Router 代码分割问题
+2. **环境差异对比**：Docker vs 本地开发环境的配置差异分析
+3. **渐进式排查**：从单个页面问题扩展到系统性问题的识别
+4. **配置优化策略**：在开发效率和性能之间找到平衡点
+
+**TanStack Router 最佳实践**：
+- 开发环境建议禁用自动代码分割，避免模块解析问题
+- 生产环境可以启用代码分割，通过构建过程处理
+- 明确配置路由目录和生成文件路径，提高配置可靠性
+- 合理配置 Vite 开发服务器参数，确保网络访问正常
+
+**问题预防措施**：
+- 建立标准的 Vite 配置模板
+- 在项目初期验证开发环境的稳定性
+- 定期检查前端工具链的兼容性
+- 保持开发和生产环境配置的一致性
+
+这次问题的解决为后续前端开发建立了稳定的技术基础，确保开发效率和代码质量。
