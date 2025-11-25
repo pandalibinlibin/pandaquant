@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { OpenAPI } from "@/client/core/OpenAPI";
 import { request } from "@/client/core/request";
+import StockDataTable from "./StockDataTable";
 
 interface DataParameterFormProps {
   dataType: string;
@@ -17,6 +18,8 @@ function DataParameterForm({ dataType }: DataParameterFormProps) {
     end_date: "",
   });
   const [loading, setLoading] = useState(false);
+  const [responseData, setResponseData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -35,8 +38,12 @@ function DataParameterForm({ dataType }: DataParameterFormProps) {
       });
 
       console.log("API 响应:", response);
+      setResponseData(response);
+      setError(null);
     } catch (error) {
       console.error("查询失败:", error);
+      setError("数据获取失败，请稍后重试");
+      setResponseData(null);
     } finally {
       setLoading(false);
     }
@@ -103,6 +110,29 @@ function DataParameterForm({ dataType }: DataParameterFormProps) {
           {t("data.currentSelection")}
           {dataType}
         </Text>
+      )}
+
+      {error && (
+        <Box
+          mt={4}
+          p={4}
+          bg="red.50"
+          borderRadius="md"
+          borderWidth={1}
+          borderColor="red.200"
+        >
+          <Text color="red.600">{error}</Text>
+        </Box>
+      )}
+
+      {responseData && (
+        <Box>
+          <StockDataTable
+            data={responseData.data}
+            loading={false}
+            error={null}
+          />
+        </Box>
       )}
     </Box>
   );

@@ -40,6 +40,18 @@
     "stockFinancialDesc": "Financial statements and metrics",
     "stockSymbol": "Stock Symbol",
     "startDate": "Start Date",
-    "endDate": "End Date"
+    "endDate": "End Date",
+    "symbol": "Symbol",
+    "date": "Date",
+    "open": "Open",
+    "close": "Close",
+    "high": "High",
+    "low": "Low",
+    "change": "Change",
+    "pctChange": "Change %",
+    "volume": "Volume",
+    "amount": "Amount",
+    "loading": "Loading data...",
+    "noData": "No data available"
   }
 }
