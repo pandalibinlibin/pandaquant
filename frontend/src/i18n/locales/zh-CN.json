@@ -72,5 +72,15 @@
     "active": "活跃",
     "inactive": "非活跃",
     "factorClass": "因子类名"
+  },
+  "strategies": {
+    "title": "策略管理",
+    "list": "策略列表",
+    "name": "策略名称",
+    "description": "策略描述",
+    "backtest": "回测",
+    "run": "运行",
+    "status": "状态",
+    "performance": "性能指标"
   }
 }

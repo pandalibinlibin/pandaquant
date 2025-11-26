@@ -1973,3 +1973,208 @@ class FactorInfo(BaseModel):
 3. **用户体验优先**：在解决技术问题的同时，提升了前端显示效果
 
 这次重构为因子模块建立了清晰、可维护、可扩展的架构基础，为后续量化功能开发奠定了坚实基础。
+
+---
+
+## 策略管理模块开发完成 (2025-11-26)
+
+### 开发目标
+继续推进量化系统主要面板的前后端打通，完成策略管理模块的完整实现，为用户提供策略查看、回测执行等核心功能。
+
+### 技术架构
+
+#### 后端架构
+**策略服务层**：
+- `BaseStrategy` 抽象基类：定义策略接口规范
+- `StrategyService` 服务类：策略自动发现、注册和管理
+- 自动发现机制：扫描 `app.domains.strategies` 包下的策略类
+
+**API 路由设计**：
+- `GET /api/v1/strategies/` - 获取策略列表
+- `GET /api/v1/strategies/{strategy_name}` - 获取策略详情
+- `POST /api/v1/strategies/{strategy_name}/backtest` - 执行策略回测
+- `GET /api/v1/strategies/{strategy_name}/backtests` - 获取回测历史
+- `GET /api/v1/strategies/{strategy_name}/backtests/{backtest_id}` - 获取回测结果
+- `DELETE /api/v1/strategies/{strategy_name}/backtests/{backtest_id}` - 删除回测结果
+
+**数据模型**：
+```python
+class StrategyInfo(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class BacktestRequest(BaseModel):
+    symbol: str
+    start_date: str
+    end_date: str
+    initial_capital: float = 1000000.0
+    commission: float = 0.0003
+    # ... 其他回测参数
+
+class PerformanceMetrics(BaseModel):
+    total_return: Optional[float] = None
+    sharpe_ratio: Optional[float] = None
+    max_drawdown: Optional[float] = None
+    # ... 完整的性能指标
+```
+
+#### 前端架构
+**组件结构**：
+```
+frontend/src/components/Strategies/
+├── StrategyList.tsx        # 策略列表主组件
+```
+
+**路由配置**：
+```
+frontend/src/routes/_layout/strategies.tsx  # 策略管理页面路由
+```
+
+**国际化支持**：
+- 中文翻译：`zh-CN.json` 中的 `strategies` 部分
+- 英文翻译：`en-US.json` 中的 `strategies` 部分
+
+### 实现步骤
+
+#### 第一阶段：后端 API 验证
+1. **发现现有 API**：策略管理 API 已完整实现
+2. **验证 API 集成**：确认 API 已正确集成到主路由
+3. **测试 API 功能**：验证策略列表、回测等接口正常工作
+
+#### 第二阶段：前端组件开发
+1. **创建组件目录**：`frontend/src/components/Strategies/`
+2. **实现 StrategyList 组件**：
+   - 策略列表展示
+   - API 数据获取
+   - 加载状态处理
+   - 错误状态处理
+
+3. **路由集成**：
+   - 创建 `strategies.tsx` 路由文件
+   - 集成 StrategyList 组件
+   - 配置页面布局
+
+4. **国际化配置**：
+   - 添加中英文翻译文本
+   - 支持多语言切换
+
+#### 第三阶段：技术问题解决
+1. **Chakra UI 兼容性**：
+   - 解决 `AlertIcon` 导入问题：改用 `react-icons/md` 的 `MdError`
+   - 解决表格组件问题：适配 Chakra UI v3 的新语法
+   - 修复 API 客户端导入：使用正确的 `@/client/core/request` 路径
+
+2. **UI 优化**：
+   - 表格列宽优化：30% + 45% + 25% 分布
+   - 按钮布局优化：水平排列，适当间距
+   - 添加表格边框：提升视觉层次
+
+### 修改文件清单
+
+#### 新增文件
+1. `frontend/src/components/Strategies/StrategyList.tsx` - 策略列表组件
+2. `frontend/src/routes/_layout/strategies.tsx` - 策略管理页面路由
+
+#### 修改文件
+1. `frontend/src/i18n/locales/zh-CN.json` - 添加策略管理中文翻译
+2. `frontend/src/i18n/locales/en-US.json` - 添加策略管理英文翻译
+
+### 技术要点
+
+#### Chakra UI v3 适配
+**表格组件新语法**：
+```tsx
+// 旧语法 (v2)
+<Table>
+  <Thead><Tr><Th>Header</Th></Tr></Thead>
+  <Tbody><Tr><Td>Cell</Td></Tr></Tbody>
+</Table>
+
+// 新语法 (v3)
+<Table.Root>
+  <Table.Header>
+    <Table.Row><Table.ColumnHeader>Header</Table.ColumnHeader></Table.Row>
+  </Table.Header>
+  <Table.Body>
+    <Table.Row><Table.Cell>Cell</Table.Cell></Table.Row>
+  </Table.Body>
+</Table.Root>
+```
+
+#### API 客户端使用
+**正确的导入方式**：
+```tsx
+import { request } from "@/client/core/request";
+import { OpenAPI } from "@/client";
+
+const response = await request<StrategiesResponse>(OpenAPI, {
+  method: "GET",
+  url: "/api/v1/strategies/",
+});
+```
+
+#### 响应式布局设计
+**表格列宽控制**：
+```tsx
+<Table.ColumnHeader w="30%">策略名称</Table.ColumnHeader>
+<Table.ColumnHeader w="45%">策略描述</Table.ColumnHeader>
+<Table.ColumnHeader w="25%">操作</Table.ColumnHeader>
+```
+
+**按钮布局优化**：
+```tsx
+<Box display="flex" gap={2} flexWrap="wrap">
+  <Button size="sm" colorScheme="blue">回测</Button>
+  <Button size="sm" variant="outline">查看详情</Button>
+</Box>
+```
+
+### 测试验证
+
+#### 功能测试
+1. **页面访问**：`http://localhost:5173/strategies` 正常显示
+2. **数据获取**：成功从后端获取策略列表数据
+3. **策略显示**：正确显示 `DualMovingAverageStrategy` 等策略
+4. **UI 交互**：按钮点击、表格排版正常
+
+#### 兼容性测试
+1. **Chakra UI v3**：所有组件正常渲染
+2. **TypeScript**：类型检查通过
+3. **国际化**：中英文切换正常
+4. **响应式**：不同屏幕尺寸适配良好
+
+### 开发成果
+
+#### 完成的功能模块
+1. **数据管理** ✅ - 股票数据获取和展示
+2. **因子管理** ✅ - 因子注册、列表和参数显示
+3. **策略管理** ✅ - 策略列表、回测接口
+
+#### 技术栈验证
+1. **后端**：FastAPI + SQLModel + Backtrader 架构稳定
+2. **前端**：React + Chakra UI v3 + TanStack Router 集成良好
+3. **API 客户端**：OpenAPI 自动生成的客户端工作正常
+4. **国际化**：react-i18next 多语言支持完善
+
+### 经验总结
+
+#### 技术经验
+1. **Chakra UI 版本升级**：v3 的组件语法变化较大，需要仔细适配
+2. **API 客户端导入**：自动生成的客户端代码结构需要理解清楚
+3. **图标库选择**：项目统一使用 `react-icons` 而非 `@chakra-ui/icons`
+4. **表格布局**：合理的列宽分配和响应式设计提升用户体验
+
+#### 开发流程
+1. **增量开发**：每次只修改一小步，及时验证和调试
+2. **问题解决**：遇到技术问题时，先查看项目现有代码的实现方式
+3. **UI 优化**：功能实现后，重点关注用户体验和视觉效果
+4. **文档更新**：及时记录开发过程和技术要点
+
+### 下一步规划
+策略管理模块的基础功能已完成，可以考虑：
+1. **信号监控模块** - 实时信号推送和监控界面
+2. **回测分析模块** - 回测结果的详细分析和可视化
+3. **策略功能增强** - 策略创建、编辑、参数配置等高级功能
+4. **用户权限管理** - 不同用户角色的策略访问控制
+
+策略管理模块的成功实现，标志着量化系统的核心功能框架基本成型，为后续的功能扩展和优化奠定了坚实基础。

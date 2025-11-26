@@ -15,6 +15,7 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutStrategiesRouteImport } from './routes/_layout/strategies'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
@@ -48,6 +49,11 @@ const LayoutRoute = LayoutRouteImport.update({
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutStrategiesRoute = LayoutStrategiesRouteImport.update({
+  id: '/strategies',
+  path: '/strategies',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/strategies': typeof LayoutStrategiesRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/settings'
+    | '/strategies'
     | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/settings'
+    | '/strategies'
     | '/'
   id:
     | '__root__'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_layout/factors'
     | '/_layout/items'
     | '/_layout/settings'
+    | '/_layout/strategies'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/strategies': {
+      id: '/_layout/strategies'
+      path: '/strategies'
+      fullPath: '/strategies'
+      preLoaderRoute: typeof LayoutStrategiesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -250,6 +269,7 @@ interface LayoutRouteChildren {
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutStrategiesRoute: typeof LayoutStrategiesRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -259,6 +279,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutStrategiesRoute: LayoutStrategiesRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

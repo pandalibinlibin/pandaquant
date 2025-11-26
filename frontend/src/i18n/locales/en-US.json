@@ -72,5 +72,15 @@
     "active": "Active",
     "inactive": "Inactive",
     "factorClass": "Factor Class"
+  },
+  "strategies": {
+    "title": "Strategy Management",
+    "list": "Strategy List",
+    "name": "Strategy Name",
+    "description": "Description",
+    "backtest": "Backtest",
+    "run": "Run",
+    "status": "Status",
+    "performance": "Performance Metrics"
   }
 }
