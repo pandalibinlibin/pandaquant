@@ -49,6 +49,7 @@ class FactorInfo(BaseModel):
 
     name: str = Field(..., description="Factor name")
     factor_type: str = Field(..., description="Factor type")
+    factor_class: str = Field(..., description="Factor class name")
     description: str = Field(..., description="Factor description")
     parameters: Dict[str, Any] = Field(..., description="Factor parameters")
     required_fields: List[str] = Field(..., description="Required data fields")
@@ -109,6 +110,7 @@ async def list_factors(
                 factor_info = FactorInfo(
                     name=factor.name,
                     factor_type=factor.factor_type.value,
+                    factor_class=factor.factor_class or "Unknown",
                     description=factor.description,
                     parameters=factor.parameters,
                     required_fields=factor.get_required_fields(),
@@ -152,6 +154,7 @@ async def get_factor(
         factor_info = FactorInfo(
             name=factor.name,
             factor_type=factor.factor_type.value,
+            factor_class=factor.factor_class or "Unknown",
             description=factor.description,
             parameters=factor.parameters,
             required_fields=factor.get_required_fields(),
@@ -312,10 +315,36 @@ class FactorRegisterRequest(BaseModel):
     """Factor registration request model"""
 
     name: str = Field(..., description="Factor name")
-    factor_type: str = Field(..., description="Factor type")
+    factor_class: str = Field(
+        ..., description="Factor class name (e.g., MovingAverageFactor)"
+    )
     description: str = Field(..., description="Factor description")
     parameters: Dict[str, Any] = Field(..., description="Factor parameters")
-    required_fields: List[str] = Field(..., description="Required data fields")
+
+
+def create_factor_instance(
+    factor_class: str, name: str, description: str, parameters: Dict[str, Any]
+) -> Factor:
+    """Factory method to create factor instances using auto-discovery"""
+    factor_modules = {
+        "MovingAverageFactor": "app.domains.factors.technical",
+        "RSIFactor": "app.domains.factors.technical",
+        "MACDFactor": "app.domains.factors.technical",
+        "BollingerBandsFactor": "app.domains.factors.technical",
+        "KDJFactor": "app.domains.factors.technical",
+        "FinancialRatioFactor": "app.domains.factors.fundamental",
+    }
+
+    if factor_class not in factor_modules:
+        raise ValueError(f"Unsupported factor class: {factor_class}")
+
+    try:
+        module = __import__(factor_modules[factor_class], fromlist=[factor_class])
+        FactorClass = getattr(module, factor_class)
+
+        return FactorClass(name=name, factor_class=factor_class, **parameters)
+    except Exception as e:
+        raise ValueError(f"Failed to create {factor_class}: {str(e)}")
 
 
 @router.post("/register", response_model=FactorInfo)
@@ -343,12 +372,11 @@ async def register_factor(
                 status_code=409, detail=f"Factor '{request.name}' already exists"
             )
 
-        factor = Factor(
+        factor = create_factor_instance(
+            factor_class=request.factor_class,
             name=request.name,
-            factor_type=request.factor_type,
             description=request.description,
             parameters=request.parameters,
-            required_fields=request.required_fields,
         )
 
         success = factor_service.register_factor(factor)
@@ -358,9 +386,10 @@ async def register_factor(
         response = FactorInfo(
             name=factor.name,
             factor_type=factor.factor_type,
+            factor_class=request.factor_class,
             description=factor.description,
             parameters=factor.parameters,
-            required_fields=factor.required_fields,
+            required_fields=factor.get_required_fields(),
             status="active",
         )
 

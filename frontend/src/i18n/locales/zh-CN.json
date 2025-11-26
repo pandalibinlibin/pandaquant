@@ -53,5 +53,24 @@
     "amount": "成交额",
     "loading": "正在加载数据...",
     "noData": "暂无数据"
+  },
+  "factors": {
+    "title": "因子管理",
+    "loading": "正在加载因子...",
+    "noFactors": "暂无因子数据",
+    "factorType": "因子类型",
+    "technical": "技术指标",
+    "fundamental": "基本面",
+    "alternative": "另类因子",
+    "factorName": "因子名称",
+    "description": "描述",
+    "category": "分类",
+    "parameters": "参数",
+    "requiredFields": "必需字段",
+    "status": "状态",
+    "lastUpdated": "最后更新",
+    "active": "活跃",
+    "inactive": "非活跃",
+    "factorClass": "因子类名"
   }
 }

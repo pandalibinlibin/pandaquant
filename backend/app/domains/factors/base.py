@@ -27,11 +27,13 @@ class Factor(ABC):
         factor_type: FactorType,
         description: str = "",
         parameters: Dict[str, Any] = None,
+        factor_class: str = None,
     ):
         self.name = name
         self.factor_type = factor_type
         self.description = description
         self.parameters = parameters or {}
+        self.factor_class = factor_class
         self.status = FactorStatus.ACTIVE
         self.last_calculation = None
         self.error_count = 0

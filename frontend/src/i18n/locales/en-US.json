@@ -53,5 +53,24 @@
     "amount": "Amount",
     "loading": "Loading data...",
     "noData": "No data available"
+  },
+  "factors": {
+    "title": "Factor Management",
+    "loading": "Loading factors...",
+    "noFactors": "No factor data available",
+    "factorType": "Factor Type",
+    "technical": "Technical",
+    "fundamental": "Fundamental",
+    "alternative": "Alternative",
+    "factorName": "Factor Name",
+    "description": "Description",
+    "category": "Category",
+    "parameters": "Parameters",
+    "requiredFields": "Required Fields",
+    "status": "Status",
+    "lastUpdated": "Last Updated",
+    "active": "Active",
+    "inactive": "Inactive",
+    "factorClass": "Factor Class"
   }
 }
