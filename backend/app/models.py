@@ -137,7 +137,6 @@ class Strategy(SQLModel, table=True):
 
     creator: Optional["User"] = Relationship(back_populates="strategies")
     backtests: List["Backtest"] = Relationship(back_populates="strategy")
-    signals: List["Signal"] = Relationship(back_populates="strategy")
 
 
 class Factor(SQLModel, table=True):
@@ -184,9 +183,8 @@ class Signal(SQLModel, table=True):
     __tablename__ = "signals"
 
     id: Optional[UUID] = Field(default_factory=uuid4, primary_key=True)
-    strategy_id: UUID = Field(foreign_key="strategies.id")
+    strategy_name: Optional[str] = Field(default=None, max_length=100, index=True)
     symbol: str = Field(max_length=20, index=True)
-    signal_type: str = Field(max_length=20, index=True)
     signal_strength: float = Field(default=0.0)
     price: Optional[float] = Field(default=None)
     quantity: Optional[int] = Field(default=None)
@@ -200,7 +198,6 @@ class Signal(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     created_by: UUID = Field(foreign_key="user.id")
 
-    strategy: Optional["Strategy"] = Relationship(back_populates="signals")
     creator: Optional["User"] = Relationship(back_populates="signals")
 
 

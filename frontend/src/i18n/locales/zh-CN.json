@@ -82,5 +82,12 @@
     "run": "运行",
     "status": "状态",
     "performance": "性能指标"
+  },
+  "signals": {
+    "title": "信号监控",
+    "symbol": "交易标的",
+    "action": "操作类型",
+    "confidence": "置信度",
+    "timestamp": "时间戳"
   }
 }

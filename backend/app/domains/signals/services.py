@@ -4,6 +4,11 @@ Signal push service
 
 from typing import Any
 
+from uuid import UUID
+from sqlmodel import Session, select
+from app.core.db import engine
+from app.models import Signal
+
 from app.core.logging import get_logger
 from app.domains.signals.base import PushChannel, PushResult
 from app.domains.signals.email import EmailChannel
@@ -128,6 +133,115 @@ class SignalPushService:
                 health_status[name] = False
 
         return health_status
+
+    def list_signals(
+        self,
+        symbol: str | None = None,
+        page: int = 1,
+        size: int = 20,
+    ) -> dict[str, Any]:
+        """List signals with optional filtering from database"""
+        with Session(engine) as session:
+            statement = select(Signal)
+
+            if symbol:
+                statement = statement.where(Signal.symbol == symbol)
+
+            total_statement = statement
+            total = len(session.exec(total_statement).all())
+
+            statement = statement.offset((page - 1) * size).limit(size)
+            signals = session.exec(statement).all()
+
+            signal_list = []
+            for signal in signals:
+                signal_list.append(
+                    {
+                        "id": str(signal.id),
+                        "symbol": signal.symbol,
+                        "action": signal.status,
+                        "confidence": signal.signal_strength,
+                        "strategy_name": signal.strategy_name,
+                        "timestamp": signal.created_at.isoformat() + "Z",
+                        "metadata": {
+                            "message": signal.message,
+                            "price": signal.price,
+                            "quantity": signal.quantity,
+                        },
+                    }
+                )
+
+            return {"data": signal_list, "total": total, "page": page, "size": size}
+
+    def get_signal(self, signal_id: str) -> dict[str, Any] | None:
+        """Get specific signal by ID from database"""
+        with Session(engine) as session:
+            signal = session.get(Signal, UUID(signal_id))
+            if not signal:
+                return None
+
+            return {
+                "id": str(signal.id),
+                "symbol": signal.symbol,
+                "action": signal.status,
+                "confidence": signal.signal_strength,
+                "strategy_name": signal.strategy_name,
+                "timestamp": signal.created_at.isoformat() + "Z",
+                "metadata": {
+                    "message": signal.message,
+                    "price": signal.price,
+                    "quantity": signal.quantity,
+                },
+            }
+
+    def create_signal(self, signal_data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new signal in database"""
+        with Session(engine) as session:
+            # 验证策略名称必须提供
+            strategy_name = signal_data.get("strategy_name")
+            if not strategy_name:
+                raise ValueError("strategy_name is required")
+            
+            # 验证策略是否在代码注册表中
+            from app.domains.strategies.services import StrategyService
+            strategy_service = StrategyService()
+            registered_strategies = strategy_service.list_strategies()
+            if strategy_name not in registered_strategies:
+                raise ValueError(
+                    f"Strategy '{strategy_name}' not found in registered strategies. "
+                    f"Available strategies: {', '.join(registered_strategies)}"
+                )
+
+            signal = Signal(
+                strategy_name=strategy_name,
+                symbol=signal_data["symbol"],
+                signal_strength=signal_data["confidence"],
+                status=signal_data["action"],
+                message=signal_data.get("metadata", {}).get("message"),
+                price=signal_data.get("metadata", {}).get("price"),
+                quantity=signal_data.get("metadata", {}).get("quantity"),
+                created_by=UUID(signal_data["created_by"]),
+            )
+
+            session.add(signal)
+            session.commit()
+            session.refresh(signal)
+
+            logger.info(f"Created signal in database: {signal.id}")
+
+            return {
+                "id": str(signal.id),
+                "symbol": signal.symbol,
+                "action": signal.status,
+                "confidence": signal.signal_strength,
+                "strategy_name": signal.strategy_name,
+                "timestamp": signal.created_at.isoformat() + "Z",
+                "metadata": {
+                    "message": signal.message,
+                    "price": signal.price,
+                    "quantity": signal.quantity,
+                },
+            }
 
 
 signal_push_service = SignalPushService()

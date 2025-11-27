@@ -29,10 +29,10 @@ class SignalInfo(BaseModel):
     """Signal information response model"""
 
     id: str = Field(..., description="Signal ID")
-    signal_type: str = Field(..., description="Signal type")
     symbol: str = Field(..., description="Trading symbol")
     action: str = Field(..., description="Signal action (buy/sell/hold)")
     confidence: float = Field(..., description="Signal confidence score")
+    strategy_name: Optional[str] = Field(None, description="Strategy name")
     timestamp: str = Field(..., description="Signal timestamp")
     metadata: Dict[str, Any] = Field(..., description="Additional signal metadata")
 
@@ -48,7 +48,6 @@ class SignalListResponse(BaseModel):
 
 @router.get("/", response_model=SignalListResponse)
 async def list_signals(
-    signal_type: Optional[str] = None,
     symbol: Optional[str] = None,
     page: int = 1,
     size: int = 20,
@@ -58,7 +57,6 @@ async def list_signals(
     List all signals with optional filtering
 
     Args:
-        signal_type: Filter by signal type
         symbol: Filter by trading symbol
         page: Page number for pagination
         size: Page size for pagination
@@ -70,7 +68,6 @@ async def list_signals(
 
     try:
         signals = signal_push_service.list_signals(
-            signal_type=signal_type,
             symbol=symbol,
             page=page,
             size=size,
@@ -80,10 +77,10 @@ async def list_signals(
         for signal in signals.get("data", []):
             signal_info = SignalInfo(
                 id=signal.get("id", ""),
-                signal_type=signal.get("signal_type", ""),
                 symbol=signal.get("symbol", ""),
                 action=signal.get("action", ""),
                 confidence=signal.get("confidence", 0.0),
+                strategy_name=signal.get("strategy_name"),
                 timestamp=signal.get("timestamp", ""),
                 metadata=signal.get("metadata", {}),
             )
@@ -132,10 +129,10 @@ async def get_signal(
 
         response = SignalInfo(
             id=signal.get("id", ""),
-            signal_type=signal.get("signal_type", ""),
             symbol=signal.get("symbol", ""),
             action=signal.get("action", ""),
             confidence=signal.get("confidence", 0.0),
+            strategy_name=signal.get("strategy_name"),
             timestamp=signal.get("timestamp", ""),
             metadata=signal.get("metadata", {}),
         )
@@ -154,10 +151,10 @@ async def get_signal(
 class SignalCreateRequest(BaseModel):
     """Signal creation request model"""
 
-    signal_type: str = Field(..., description="Signal type")
     symbol: str = Field(..., description="Trading symbol")
     action: str = Field(..., description="Signal action (buy/sell/hold)")
     confidence: float = Field(..., description="Signal confidence score (0-1)")
+    strategy_name: str = Field(..., description="Strategy name")
     metadata: Optional[Dict[str, Any]] = Field(
         None, description="Additional signal metadata"
     )
@@ -182,12 +179,15 @@ async def create_signal(
         HTTPException: If signal creation fails
     """
     try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
         signal_data = {
-            "signal_type": request.signal_type,
             "symbol": request.symbol,
             "action": request.action,
             "confidence": request.confidence,
+            "strategy_name": request.strategy_name,
             "metadata": request.metadata or {},
+            "created_by": str(current_user.id) if current_user else None,
         }
 
         created_signal = signal_push_service.create_signal(signal_data)
@@ -196,10 +196,10 @@ async def create_signal(
 
         response = SignalInfo(
             id=created_signal.get("id", ""),
-            signal_type=created_signal.get("signal_type", ""),
             symbol=created_signal.get("symbol", ""),
             action=created_signal.get("action", ""),
             confidence=created_signal.get("confidence", 0.0),
+            strategy_name=created_signal.get("strategy_name"),
             timestamp=created_signal.get("timestamp", ""),
             metadata=created_signal.get("metadata", {}),
         )

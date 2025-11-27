@@ -82,5 +82,12 @@
     "run": "Run",
     "status": "Status",
     "performance": "Performance Metrics"
+  },
+  "signals": {
+    "title": "Signal Monitoring",
+    "symbol": "Symbol",
+    "action": "Action",
+    "confidence": "Confidence",
+    "timestamp": "Timestamp"
   }
 }
