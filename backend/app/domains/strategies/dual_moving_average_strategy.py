@@ -7,7 +7,6 @@ A simple strategy that uses two moving averages (short and long) to generate sig
 from typing import Dict, Any, List
 import pandas as pd
 import backtrader as bt
-import asyncio
 
 from app.domains.strategies.base_strategy import BaseStrategy
 from app.core.logging import get_logger
@@ -35,14 +34,14 @@ class DualMovingAverageStrategy(BaseStrategy):
                 "weight": 1.0,
                 "factors": [
                     {
-                        "name": "MA",
-                        "type": "technical",
-                        "params": {"period": 5, "column": "close"},
+                        "name": "MA_5_SMA",
+                        "type": "MovingAverageFactor",
+                        "params": {"period": 5, "ma_type": "SMA"},
                     },
                     {
-                        "name": "MA",
-                        "type": "technical",
-                        "params": {"period": 20, "column": "close"},
+                        "name": "MA_20_SMA",
+                        "type": "MovingAverageFactor",
+                        "params": {"period": 20, "ma_type": "SMA"},
                     },
                 ],
             }
@@ -148,15 +147,17 @@ class DualMovingAverageStrategy(BaseStrategy):
                             f"Buy order: {size} shares of {symbol} at {price:.2f} on {current_date}"
                         )
 
-                        asyncio.create_task(
-                            self._push_signal_if_needed(
-                                {
-                                    "action": "buy",
-                                    "symbol": symbol,
-                                    "price": price,
-                                    "quantity": size,
-                                    "timestamp": current_date,
-                                    "reason": signal.get("reason", ""),
-                                }
-                            )
-                        )
+                        # Skip signal push in backtest mode - signals are for live/paper trading only
+                        # asyncio.create_task() cannot be used in executor thread pool
+                        # TODO: Implement signal push for live/paper trading modes
+
+            elif action == "sell":
+                if self.position:
+                    self.close()
+                    logger.info(
+                        f"Sell order: close position of {symbol} at {price:.2f} on {current_date}"
+                    )
+
+                    # Skip signal push in backtest mode - signals are for live/paper trading only
+                    # asyncio.create_task() cannot be used in executor thread pool
+                    # TODO: Implement signal push for live/paper trading modes

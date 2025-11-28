@@ -71,7 +71,10 @@ class DailyDataGroup(DataGroup):
 
     def to_backtrader_feed(self) -> bt.feeds.PandasData:
         """
-        Convert prepared data to Backtrader PandasData feed
+        Convert parepared data to Backtrader PandasData feed with dynamic factor columns
+
+        This method creates an extended PandasData class that includes factro columns
+        as Backtrader lines, allowing strategies to access factor values directly.
 
         Returns:
             Backtrader PandasData feed ready for cerebro.adddata()
@@ -85,47 +88,66 @@ class DailyDataGroup(DataGroup):
             raise ValueError(
                 f"Data index must be DatetimeIndex for {self.name}, got {type(self._prepared_data.index)}"
             )
+        # Identify OHLCV columns (standard stock data columns)
+        ohlcv_cols = ["open", "high", "low", "close", "volume"]
 
-        required_cols = ["open", "high", "low", "close", "volume"]
-        missing_cols = [
-            col for col in required_cols if col not in self._prepared_data.columns
-        ]
-        if missing_cols:
-            raise ValueError(
-                f"Missing required columns for {self.name}: {missing_cols}"
+        # Identify factor columns (numeric columns except OHLCV)
+        # Only include numeric columns to avoid string type errors in Backtrader
+        import numpy as np
+
+        numeric_cols = self._prepared_data.select_dtypes(
+            include=[np.number]
+        ).columns.tolist()
+        factor_cols = [col for col in numeric_cols if col not in ohlcv_cols]
+
+        if factor_cols:
+
+            class ExtendedPandasData(bt.feeds.PandasData):
+                """Extended PandasData with dynamic factor columns"""
+
+                lines = tuple(factor_cols)
+
+                params = tuple([(col, col) for col in factor_cols])
+
+            feed_params = {
+                "dataname": self._prepared_data,
+                "datetime": None,
+                "open": "open",
+                "high": "high",
+                "low": "low",
+                "close": "close",
+                "volume": "volume",
+                "openinterest": -1,
+            }
+
+            for col in factor_cols:
+                feed_params[col] = col
+
+            feed = ExtendedPandasData(**feed_params)
+
+            # Set _factor_cols mapping for strategy to access factors by name
+            # Map factor name to line index (OHLCV lines are 0-6)
+            feed._factor_cols = {col: i + 7 for i, col in enumerate(factor_cols)}
+
+            logger.info(
+                f"Created Backtrader feed for {self.name} with {len(self._prepared_data)} bars and {len(factor_cols)} factors: {factor_cols}"
             )
 
-        ohlcv_cols = ["open", "high", "low", "close", "volume"]
-        factor_cols = [
-            col for col in self._prepared_data.columns if col not in ohlcv_cols
-        ]
+        else:
+            feed = bt.feeds.PandasData(
+                dataname=self._prepared_data,
+                datetime=None,
+                open="open",
+                high="high",
+                low="low",
+                close="close",
+                volume="volume",
+                openinterest=-1,
+            )
 
-        feed = bt.feeds.PandasData(
-            dataname=self._prepared_data,
-            datetime=None,
-            open="open",
-            high="high",
-            low="low",
-            close="close",
-            volume="volume",
-            openinterest=-1,
-        )
-
-        # Map factor columns to Backtrader lines indices
-        # Backtrader PandasData lines structure:
-        # lines[0]: datetime, lines[1]: open, lines[2]: high, lines[3]: low,
-        # lines[4]: close, lines[5]: volume, lines[6]: openinterest
-        # Factor columns start from lines[6] (even if openinterest=-1, the position exists)
-        feed._factor_cols = {}
-        for i, col in enumerate(factor_cols):
-            line_idx = 6 + i  # Factor columns: lines[6], lines[7], lines[8], ...
-            feed._factor_cols[col] = line_idx
-
-        feed._factor_col_names = factor_cols
-
-        logger.info(
-            f"Created Backtrader feed for {self.name} with {len(self._prepared_data)} bars"
-        )
+            logger.info(
+                f"Created Backtrader feed for {self.name} with {len(self._prepared_data)} bars (no factors)"
+            )
 
         return feed
 
@@ -169,8 +191,10 @@ class DailyDataGroup(DataGroup):
 
         from app.domains.factors.technical import MovingAverageFactor
 
+        # Factor factories keyed by factor type (class name)
         factor_factories = {
-            ("MA", "technical"): lambda params: MovingAverageFactor(
+            "MovingAverageFactor": lambda name, params: MovingAverageFactor(
+                name=name,
                 period=params.get("period", 20),
                 ma_type=params.get("ma_type", "SMA"),
             ),
@@ -181,24 +205,23 @@ class DailyDataGroup(DataGroup):
             factor_type = factor_config.get("type")
             factor_params = factor_config.get("params", {})
 
-            period = factor_params.get("period", 20)
-            factor_cache_key = f"{factor_name}_{period}"
-            if factor_cache_key in self._factor_objects:
+            # Use factor name as cache key to avoid duplicates
+            if factor_name in self._factor_objects:
                 continue
 
             try:
-                factory_key = (factor_name, factor_type)
-                if factory_key not in factor_factories:
+                if factor_type not in factor_factories:
                     logger.warning(
-                        f"Unknown factor: name={factor_name}, type={factor_type}, params={factor_params}, skipping..."
+                        f"Unknown factor type: {factor_type}, skipping factor {factor_name}..."
                     )
                     continue
 
-                factor_obj = factor_factories[factory_key](factor_params)
+                # Create factor instance with name and params
+                factor_obj = factor_factories[factor_type](factor_name, factor_params)
                 self.factor_service.register_factor(factor_obj)
-                self._factor_objects[factor_cache_key] = factor_obj
-                logger.debug(
-                    f"Created and registered factor {factor_name} for group {self.name}"
+                self._factor_objects[factor_name] = factor_obj
+                logger.info(
+                    f"Created and registered factor {factor_name} ({factor_type}) for group {self.name}"
                 )
 
             except Exception as e:

@@ -2181,6 +2181,83 @@ const response = await request<StrategiesResponse>(OpenAPI, {
 
 ---
 
+## 最新进展 (2025-11-28)
+
+### 回测系统完整打通 ✅ 已完成
+
+#### 核心功能实现
+- ✅ **因子计算与注册**：MovingAverageFactor 正确创建和计算
+- ✅ **因子数据传递**：动态 PandasData feed 扩展，支持任意因子列
+- ✅ **策略信号生成**：DualMovingAverageStrategy 金叉/死叉信号正确识别
+- ✅ **交易执行**：Backtrader 订单系统正常工作
+- ✅ **性能指标计算**：收益率、夏普比率、最大回撤、胜率等完整计算
+- ✅ **结果保存**：回测结果保存到 PostgreSQL 数据库
+- ✅ **图表生成**：回测图表自动生成并保存
+
+#### 技术难点解决
+
+**1. 因子配置与创建**
+- **问题**：因子工厂 key 不匹配，导致因子创建失败
+- **解决**：统一使用类名作为工厂 key（`"MovingAverageFactor"`），传递 `name` 参数
+
+**2. 因子数据传递**
+- **问题**：Backtrader 不支持动态列，因子值无法传递给策略
+- **解决**：动态创建 `ExtendedPandasData` 类，添加 `_factor_cols` 映射字典
+
+**3. 异步事件循环**
+- **问题**：`asyncio.create_task()` 在 executor 线程池中报错
+- **解决**：移除回测模式下的信号推送逻辑，改用 `asyncio.get_running_loop()`
+
+**4. 数据格式统一**
+- **问题**：百分比字段格式不一致（有的是小数，有的是百分比数字）
+- **解决**：统一返回小数格式（0-1），前端负责乘以 100 显示
+
+#### 回测结果示例
+```json
+{
+  "performance": {
+    "total_return": -0.1943,        // 总收益率（小数）
+    "total_return_pct": -0.1766,    // 总收益率百分比（小数）
+    "max_drawdown": 0.1939,         // 最大回撤（小数，19.39%）
+    "win_rate": 0.4,                // 胜率（小数，40%）
+    "total_trades": 5,              // 交易次数
+    "winning_trades": 2,            // 盈利次数
+    "losing_trades": 3,             // 亏损次数
+    "final_value": 82340.68         // 最终资金
+  }
+}
+```
+
+#### 文件修改记录
+1. **backend/app/domains/strategies/daily_data_group.py**
+   - 添加 `_factor_cols` 映射（第 130 行）
+   - 修复因子工厂逻辑（第 195-227 行）
+
+2. **backend/app/domains/strategies/dual_moving_average_strategy.py**
+   - 修复因子配置（第 36-47 行）
+   - 移除 `asyncio.create_task()` 调用（第 151-153 行）
+   - 添加 sell 逻辑（第 155-164 行）
+
+3. **backend/app/domains/strategies/services.py**
+   - 修改 `max_drawdown` 为小数格式（第 325 行）
+   - 修改 `win_rate` 为小数格式（第 342 行）
+   - 修改 `total_return_pct` 为小数格式（第 413 行）
+   - 修改 `avg_annual_return_pct` 为小数格式（第 364 行）
+   - 修复异步事件循环（第 269 行）
+
+#### API 数据格式规范
+**后端返回**：所有百分比字段统一使用小数格式（0-1）
+- `max_drawdown`: 0.1939 表示 19.39%
+- `win_rate`: 0.4 表示 40%
+- `total_return_pct`: -0.1766 表示 -17.66%
+
+**前端显示**：需要乘以 100 并添加 `%` 符号
+```typescript
+const displayValue = (value * 100).toFixed(2) + '%';
+```
+
+---
+
 ## 最新进展 (2025-11-26)
 
 ### 信号监控模块 ✅ 已完成
@@ -2198,3 +2275,4 @@ const response = await request<StrategiesResponse>(OpenAPI, {
 2. ✅ 因子管理模块
 3. ✅ 策略管理模块
 4. ✅ 信号监控模块
+5. ✅ 回测系统（完整打通）

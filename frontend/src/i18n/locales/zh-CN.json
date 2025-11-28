@@ -89,5 +89,19 @@
     "action": "操作类型",
     "confidence": "置信度",
     "timestamp": "时间戳"
+  },
+  "backtests": {
+    "title": "回测分析",
+    "list": "回测列表",
+    "strategy": "策略",
+    "symbol": "标的",
+    "period": "周期",
+    "return": "收益率",
+    "sharpe": "夏普比率",
+    "drawdown": "最大回撤",
+    "trades": "交易次数",
+    "winRate": "胜率",
+    "createdAt": "创建时间",
+    "view": "查看详情"
   }
 }

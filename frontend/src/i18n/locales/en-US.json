@@ -89,5 +89,19 @@
     "action": "Action",
     "confidence": "Confidence",
     "timestamp": "Timestamp"
+  },
+  "backtests": {
+    "title": "Backtest Analysis",
+    "list": "Backtest List",
+    "strategy": "Strategy",
+    "symbol": "Symbol",
+    "period": "Period",
+    "return": "Return",
+    "sharpe": "Sharpe Ratio",
+    "drawdown": "Max Drawdown",
+    "trades": "Trades",
+    "winRate": "Win Rate",
+    "createdAt": "Created At",
+    "view": "View Details"
   }
 }

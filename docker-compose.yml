@@ -115,9 +115,9 @@ services:
         restart: true
       prestart:
         condition: service_completed_successfully
-    # volumes:
-    #   - ./backend:/app
-    #   - /app/.venv
+    volumes:
+      - ./backend:/app
+      - /app/.venv
     env_file:
       - .env
     environment:

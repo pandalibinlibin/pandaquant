@@ -21,6 +21,7 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
 import { Route as LayoutDataRouteImport } from './routes/_layout/data'
+import { Route as LayoutBacktestsRouteImport } from './routes/_layout/backtests'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
 const SignupRoute = SignupRouteImport.update({
@@ -82,6 +83,11 @@ const LayoutDataRoute = LayoutDataRouteImport.update({
   path: '/data',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutBacktestsRoute = LayoutBacktestsRouteImport.update({
+  id: '/backtests',
+  path: '/backtests',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/backtests': typeof LayoutBacktestsRoute
   '/data': typeof LayoutDataRoute
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/backtests': typeof LayoutBacktestsRoute
   '/data': typeof LayoutDataRoute
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/backtests': typeof LayoutBacktestsRoute
   '/_layout/data': typeof LayoutDataRoute
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/backtests'
     | '/data'
     | '/factors'
     | '/items'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/backtests'
     | '/data'
     | '/factors'
     | '/items'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_layout/admin'
+    | '/_layout/backtests'
     | '/_layout/data'
     | '/_layout/factors'
     | '/_layout/items'
@@ -272,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDataRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/backtests': {
+      id: '/_layout/backtests'
+      path: '/backtests'
+      fullPath: '/backtests'
+      preLoaderRoute: typeof LayoutBacktestsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/admin': {
       id: '/_layout/admin'
       path: '/admin'
@@ -284,6 +303,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutBacktestsRoute: typeof LayoutBacktestsRoute
   LayoutDataRoute: typeof LayoutDataRoute
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
@@ -295,6 +315,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutBacktestsRoute: LayoutBacktestsRoute,
   LayoutDataRoute: LayoutDataRoute,
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,

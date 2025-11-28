@@ -247,6 +247,7 @@ async def run_backtest(
                 mode = TradingMode(request.mode.lower())
 
         result = await strategy_service.run_backtest(
+            session=session,
             strategy_name=strategy_name,
             symbol=request.symbol,
             start_date=request.start_date,

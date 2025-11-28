@@ -214,12 +214,21 @@ class BacktestResult(SQLModel, table=True):
     initial_capital: float
     final_value: float
     total_return: float
-    max_drawdown: float
-    sharpe_ratio: float
-    total_trades: int
-    winning_trades: int
-    losing_trades: int
-    win_rate: float
+    max_drawdown: Optional[float] = None
+    sharpe_ratio: Optional[float] = None
+    total_trades: Optional[int] = None
+    winning_trades: Optional[int] = None
+    losing_trades: Optional[int] = None
+    win_rate: Optional[float] = None
+    total_return_pct: Optional[float] = None
+    avg_win: Optional[float] = None
+    avg_loss: Optional[float] = None
+    avg_annual_return: Optional[float] = None
+    vwr: Optional[float] = None
+    calmar_ratio: Optional[float] = None
+    sqn: Optional[float] = None
+    chart_path: Optional[str] = None
+    status: str = Field(default="pending", max_length=20)
     result_data: str = Field(default="{}")
     created_by: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=datetime.utcnow)

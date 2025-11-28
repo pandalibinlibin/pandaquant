@@ -14,6 +14,10 @@ from app.domains.factors.services import FactorService, factor_service
 from app.domains.strategies.base_strategy import BaseStrategy
 from app.domains.strategies.enums import TradingMode
 from app.domains.strategies.data_group import DataGroup
+from app.models import BacktestResult
+from uuid import UUID
+from datetime import datetime
+from sqlmodel import Session
 
 
 from pathlib import Path
@@ -146,6 +150,7 @@ class StrategyService:
 
     async def run_backtest(
         self,
+        session: Session,
         strategy_name: str,
         symbol: str,
         start_date: str,
@@ -261,7 +266,7 @@ class StrategyService:
         cerebro.broker.addcommissioninfo(comminfo)
 
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             result_list = await loop.run_in_executor(None, cerebro.run)
 
             if not result_list:
@@ -307,8 +312,18 @@ class StrategyService:
 
             if hasattr(analyzers, "drawdown") and analyzers.drawdown:
                 dd_data = analyzers.drawdown.get_analysis()
-                performance["max_drawdown"] = dd_data.get("max", {}).get(
-                    "drawdown", 0.0
+                max_dd_value = dd_data.get("max", {}).get("drawdown", 0.0)
+                # Convert to float if it's a percentage string or ensure it's a number
+                if isinstance(max_dd_value, str):
+                    # Remove '%' if present and convert to decimal
+                    max_dd_value = (
+                        float(max_dd_value.rstrip("%")) / 100.0
+                        if "%" in max_dd_value
+                        else float(max_dd_value)
+                    )
+                # Convert percentage number to decimal (e.g., 19.39 -> 0.1939)
+                performance["max_drawdown"] = (
+                    max_dd_value / 100.0 if max_dd_value != 0.0 else None
                 )
 
             if hasattr(analyzers, "trade") and analyzers.trade:
@@ -322,10 +337,11 @@ class StrategyService:
                 performance["losing_trades"] = trade_data.get("lost", {}).get(
                     "total", 0
                 )
+                # Calculate win rate as decimal (e.g., 0.4 for 40%)
                 if performance["total_trades"] > 0:
                     performance["win_rate"] = (
                         performance["winning_trades"] / performance["total_trades"]
-                    ) * 100
+                    )
                 else:
                     performance["win_rate"] = 0.0
 
@@ -344,9 +360,8 @@ class StrategyService:
                         performance["avg_annual_return"] = sum(annual_returns) / len(
                             annual_returns
                         )
-                        performance["avg_annual_return_pct"] = (
-                            performance["avg_annual_return"] * 100
-                        )
+                        # Keep avg_annual_return_pct as decimal for consistency
+                        performance["avg_annual_return_pct"] = performance["avg_annual_return"]
 
             if hasattr(analyzers, "vwr") and analyzers.vwr:
                 vwr_data = analyzers.vwr.get_analysis()
@@ -394,9 +409,42 @@ class StrategyService:
 
             final_value = cerebro.broker.getvalue()
             performance["final_value"] = final_value
+            # Calculate total_return_pct as decimal (e.g., -0.1766 for -17.66%)
             performance["total_return_pct"] = (
                 (final_value - initial_capital) / initial_capital
-            ) * 100
+            )
+
+            # Save backtest result to database
+            backtest_result = BacktestResult(
+                id=UUID(backtest_id),
+                strategy_name=strategy_name,
+                symbol=symbol,
+                start_date=start_date,
+                end_date=end_date,
+                initial_capital=initial_capital,
+                final_value=final_value,
+                total_return=performance.get("total_return", 0.0),
+                total_return_pct=performance.get("total_return_pct", 0.0),
+                sharpe_ratio=performance.get("sharpe_ratio"),
+                max_drawdown=performance.get("max_drawdown"),
+                total_trades=performance.get("total_trades"),
+                winning_trades=performance.get("winning_trades"),
+                losing_trades=performance.get("losing_trades"),
+                win_rate=performance.get("win_rate"),
+                avg_win=performance.get("avg_win"),
+                avg_loss=performance.get("avg_loss"),
+                avg_annual_return=performance.get("avg_annual_return"),
+                vwr=performance.get("vwr"),
+                calmar_ratio=performance.get("calmar_ratio"),
+                sqn=performance.get("sqn"),
+                chart_path=chart_path,
+                status="completed",
+                created_by=created_by,
+            )
+            session.add(backtest_result)
+            session.commit()
+            session.refresh(backtest_result)
+            logger.info(f"Backtest result saved to database: {backtest_id}")
 
             return {
                 "backtest_id": backtest_id,
