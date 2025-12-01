@@ -124,7 +124,7 @@ function BacktestList() {
                   }
                   fontWeight="medium"
                 >
-                  {backtest.total_return_pct.toFixed(2)}%
+                  {(backtest.total_return_pct * 100).toFixed(2)}%
                 </Text>
               </Table.Cell>
               <Table.Cell>
