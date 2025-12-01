@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Box, Table, Text, Spinner } from "@chakra-ui/react";
+import { Box, Table, Text, Spinner, Button } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { request } from "@/client/core/request";
 import { OpenAPI } from "@/client";
+import { Link } from "@tanstack/react-router";
 
 interface BacktestItem {
   backtest_id: string;
@@ -101,6 +102,9 @@ function BacktestList() {
             <Table.ColumnHeader w="14%">
               {t("backtests.createdAt")}
             </Table.ColumnHeader>
+            <Table.ColumnHeader w="8%">
+              {t("backtests.actions")}
+            </Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -155,6 +159,26 @@ function BacktestList() {
                     hour12: false,
                   })}
                 </Text>
+              </Table.Cell>
+
+              <Table.Cell>
+                <Link
+                  to="/backtest/$id"
+                  params={{ id: backtest.backtest_id }}
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 12px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "white",
+                    backgroundColor: "#3182ce",
+                    borderRadius: "6px",
+                    textDecoration: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {t("backtests.view")}
+                </Link>
               </Table.Cell>
             </Table.Row>
           ))}

@@ -102,6 +102,8 @@
     "trades": "交易次数",
     "winRate": "胜率",
     "createdAt": "创建时间",
-    "view": "查看详情"
+    "view": "查看详情",
+    "detail_title": "回测详情",
+    "actions": "操作"
   }
 }

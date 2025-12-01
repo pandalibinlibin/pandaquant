@@ -2278,6 +2278,92 @@ const displayValue = (value * 100).toFixed(2) + '%';
 
 ---
 
+## 最新进展 (2025-11-30)
+
+### 回测详情页路由实现 ✅ 已完成
+
+#### 核心功能实现
+- ✅ **详情页路由**：创建独立的回测详情页路由
+- ✅ **列表页跳转**：在回测列表添加"查看详情"按钮
+- ✅ **路由导航**：实现列表到详情的页面跳转
+- ✅ **国际化支持**：添加中英文翻译
+
+#### 技术难点解决
+
+**1. 路由冲突问题**
+- **问题**：`backtests.$id.tsx` 被识别为 `backtests.tsx` 的子路由，导致无法正确跳转
+- **原因**：TanStack Router 的文件路由系统将同名前缀的路由视为父子关系
+- **解决**：将详情页路由改为 `backtest.$id.tsx`（去掉 s），使其成为独立路由
+- **结果**：
+  - 列表页：`/backtests`
+  - 详情页：`/backtest/$id`
+
+**2. Link 组件点击无响应**
+- **问题**：Button 包裹 Link 导致点击事件被阻止
+- **尝试方案**：使用 `asChild` 属性（Chakra UI v3 不支持）
+- **最终方案**：直接使用 Link 组件，通过 `style` 属性添加按钮样式
+- **效果**：点击正常触发导航
+
+**3. 路由参数传递**
+- **语法**：`<Link to="/backtest/$id" params={{ id: backtest.backtest_id }}>`
+- **参数名**：必须与路由文件名中的参数名完全匹配（`$id`）
+- **获取参数**：`const { id } = Route.useParams()`
+
+#### 文件修改记录
+
+1. **frontend/src/routes/_layout/backtest.$id.tsx**（新建）
+   - 创建回测详情页路由组件
+   - 定义路由路径：`/_layout/backtest/$id`
+   - 使用 `Route.useParams()` 获取路由参数
+
+2. **frontend/src/components/Backtests/BacktestList.tsx**
+   - 添加 `Link` 组件导入（第 6 行）
+   - 添加"操作"列标题（第 105-107 行）
+   - 添加"查看详情"链接按钮（第 164-180 行）
+   - 使用内联样式模拟按钮外观
+
+3. **frontend/src/i18n/locales/zh-CN.json**
+   - 添加 `"detail_title": "回测详情"`
+   - 添加 `"actions": "操作"`
+
+4. **frontend/src/i18n/locales/en-US.json**
+   - 添加 `"detail_title": "Backtest Detail"`
+   - 添加 `"actions": "Actions"`
+
+#### 路由结构
+```
+/backtests              → 回测列表页（BacktestList 组件）
+/backtest/$id           → 回测详情页（BacktestDetail 组件）
+```
+
+#### 代码示例
+
+**路由定义**：
+```typescript
+export const Route = createFileRoute("/_layout/backtest/$id")({
+  component: BacktestDetail,
+});
+```
+
+**导航链接**：
+```typescript
+<Link
+  to="/backtest/$id"
+  params={{ id: backtest.backtest_id }}
+  style={{ /* 按钮样式 */ }}
+>
+  {t("backtests.view")}
+</Link>
+```
+
+#### 待完成功能
+- ❌ 调用后端 API 获取完整回测数据
+- ❌ 显示详细性能指标
+- ❌ 展示回测图表
+- ❌ 显示交易记录列表
+
+---
+
 ## 最新进展 (2025-11-26)
 
 ### 信号监控模块 ✅ 已完成

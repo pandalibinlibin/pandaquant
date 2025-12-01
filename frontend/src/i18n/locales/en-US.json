@@ -102,6 +102,8 @@
     "trades": "Trades",
     "winRate": "Win Rate",
     "createdAt": "Created At",
-    "view": "View Details"
+    "view": "View Details",
+    "detail_title": "Backtest Detail",
+    "actions": "Actions"
   }
 }
