@@ -2245,6 +2245,20 @@ const response = await request<StrategiesResponse>(OpenAPI, {
    - 修改 `avg_annual_return_pct` 为小数格式（第 364 行）
    - 修复异步事件循环（第 269 行）
 
+4. **backend/app/api/routes/backtests.py**
+   - 修改 `list_all_backtests` 函数，移除 `* 100`（第 191 行）
+   - 修改 `compare_backtests` 函数，移除 `* 100`（第 335 行）
+   - API 直接返回数据库的小数值，不做额外计算
+
+5. **frontend/src/components/Backtests/BacktestList.tsx**
+   - 修改 `total_return_pct` 显示逻辑（第 127 行）
+   - 统一使用 `(value * 100).toFixed(2) + '%'` 格式
+
+#### 数据清理
+- 删除数据库中的旧格式数据（3 条记录）
+- SQL: `DELETE FROM backtest_result WHERE max_drawdown > 1 OR max_drawdown IS NULL;`
+- 保留新格式数据（小数格式）
+
 #### API 数据格式规范
 **后端返回**：所有百分比字段统一使用小数格式（0-1）
 - `max_drawdown`: 0.1939 表示 19.39%
@@ -2255,6 +2269,12 @@ const response = await request<StrategiesResponse>(OpenAPI, {
 ```typescript
 const displayValue = (value * 100).toFixed(2) + '%';
 ```
+
+#### 验证结果
+- ✅ 收益率：`-19.43%`（正确）
+- ✅ 最大回撤：`19.39%`（正确）
+- ✅ 胜率：`40.00%`（正确）
+- ✅ 前端显示完全正常
 
 ---
 
