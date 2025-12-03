@@ -3,7 +3,452 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BacktestsListAllBacktestsData, BacktestsListAllBacktestsResponse, BacktestsCompareBacktestsData, BacktestsCompareBacktestsResponse, BacktestsGetBacktestByIdData, BacktestsGetBacktestByIdResponse, DataFetchStockDataData, DataFetchStockDataResponse, DataFetchMacroDataData, DataFetchMacroDataResponse, DataFetchIndustryConceptDataData, DataFetchIndustryConceptDataResponse, FactorsListFactorsData, FactorsListFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUnregisterFactorData, FactorsUnregisterFactorResponse, FactorsCalculateFactorData, FactorsCalculateFactorResponse, FactorsGetFactorStatusData, FactorsGetFactorStatusResponse, FactorsRegisterFactorData, FactorsRegisterFactorResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignalsListSignalsData, SignalsListSignalsResponse, SignalsCreateSignalData, SignalsCreateSignalResponse, SignalsGetSignalData, SignalsGetSignalResponse, StrategiesListStrategiesResponse, StrategiesGetStrategyData, StrategiesGetStrategyResponse, StrategiesRunBacktestData, StrategiesRunBacktestResponse, StrategiesGetBacktestResultData, StrategiesGetBacktestResultResponse, StrategiesDeleteBacktestResultData, StrategiesDeleteBacktestResultResponse, StrategiesGetBacktestHistoryData, StrategiesGetBacktestHistoryResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class BacktestsService {
+    /**
+     * List All Backtests
+     * List all backtests with filtering and sorting
+     *
+     * Args:
+     * page: Page number for pagination
+     * size: Page size for pagination
+     * strategy_name: Filter by strategy name
+     * symbol: Filter by trading symbol
+     * start_date_from: Filter by start date from (YYYY-MM-DD)
+     * start_date_to: Filter by start date to (YYYY-MM-DD)
+     * status: Filter by status
+     * sort_by: Sort field
+     * sort_desc: Sort descending if True
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Paginated list of all backtests
+     *
+     * Raises:
+     * HTTPException: If pagination parameters are invalid
+     * @param data The data for the request.
+     * @param data.page Page number
+     * @param data.size Page size
+     * @param data.strategyName Filter by strategy name
+     * @param data.symbol Filter by symbol
+     * @param data.startDateFrom Filter by start date from
+     * @param data.startDateTo Filter by start date to
+     * @param data.status Filter by status
+     * @param data.sortBy Sort by field
+     * @param data.sortDesc Sort descending
+     * @returns GlobalBacktestList Successful Response
+     * @throws ApiError
+     */
+    public static listAllBacktests(data: BacktestsListAllBacktestsData = {}): CancelablePromise<BacktestsListAllBacktestsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtests/',
+            query: {
+                page: data.page,
+                size: data.size,
+                strategy_name: data.strategyName,
+                symbol: data.symbol,
+                start_date_from: data.startDateFrom,
+                start_date_to: data.startDateTo,
+                status: data.status,
+                sort_by: data.sortBy,
+                sort_desc: data.sortDesc
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Compare Backtests
+     * Compare multiple backtests
+     *
+     * Args:
+     * backtest_ids: List of backtest IDs to compare
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Comparison results with summary statistics
+     *
+     * Raises:
+     * HTTPException: If backtest IDs are invalid or not found
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BacktestComparison Successful Response
+     * @throws ApiError
+     */
+    public static compareBacktests(data: BacktestsCompareBacktestsData): CancelablePromise<BacktestsCompareBacktestsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/backtests/compare',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Backtest By Id
+     * Get a single backtest by ID
+     *
+     * Args:
+     * backtest_id: Backtest UUID
+     * session: Database session
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Backtest details
+     *
+     * Raises:
+     * HTTPException: If backtest not found or invalid ID
+     * @param data The data for the request.
+     * @param data.backtestId
+     * @returns GlobalBacktestItem Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestById(data: BacktestsGetBacktestByIdData): CancelablePromise<BacktestsGetBacktestByIdResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtests/{backtest_id}',
+            path: {
+                backtest_id: data.backtestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class DataService {
+    /**
+     * Fetch Stock Data
+     * Fetch stock market data with caching support
+     *
+     * Supports three types of stock data:
+     * - **daily**: Daily OHLCV data with basic indicators
+     * - **minute**: Intraday minute-level data (1min, 5min, 15min, 30min, 60min)
+     * - **financial**: Financial statement data and ratios
+     *
+     * **Parameters:**
+     * - **data_type**: Type of data to fetch (daily/minute/financial)
+     * - **symbol**: Stock symbol in format like "000001.SZ" or "600000.SS"
+     * - **start_date**: Start date in YYYY-MM-DD format
+     * - **end_date**: End date in YYYY-MM-DD format
+     * - **freq**: Frequency for minute data (only required when data_type='minute')
+     * - **use_cache**: Whether to use cached data if available (default: true)
+     *
+     * **Returns:**
+     * - **data**: List of data records with OHLCV and other fields
+     * - **count**: Total number of records returned
+     * - **columns**: List of available column names
+     *
+     * **Example:**
+     * ```json
+     * {
+     * "data_type": "daily",
+     * "symbol": "000001.SZ",
+     * "start_date": "2023-01-01",
+     * "end_date": "2023-12-31",
+     * "use_cache": true
+     * }
+     * ```
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns DataResponse Successful Response
+     * @throws ApiError
+     */
+    public static fetchStockData(data: DataFetchStockDataData): CancelablePromise<DataFetchStockDataResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/data/stock',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Fetch Macro Data
+     * Fetch macro economic data with caching support
+     *
+     * Provides access to key macroeconomic indicators from official sources:
+     * - **gdp**: Gross Domestic Product data
+     * - **cpi**: Consumer Price Index (inflation indicator)
+     * - **ppi**: Producer Price Index (wholesale inflation)
+     * - **m2**: Money Supply M2 (monetary policy indicator)
+     * - **interest_rate**: SHIBOR interest rates (market rates)
+     *
+     * **Parameters:**
+     * - **data_type**: Always "macro" for this endpoint
+     * - **indicator**: Specific macro indicator to fetch (gdp/cpi/ppi/m2/interest_rate)
+     * - **start_date**: Start date in YYYY-MM-DD format
+     * - **end_date**: End date in YYYY-MM-DD format
+     * - **use_cache**: Whether to use cached data if available (default: true)
+     *
+     * **Returns:**
+     * - **data**: List of macro data records with timestamp and values
+     * - **count**: Total number of records returned
+     * - **columns**: List of available column names
+     *
+     * **Example:**
+     * ```json
+     * {
+     * "data_type": "macro",
+     * "indicator": "cpi",
+     * "start_date": "2023-01-01",
+     * "end_date": "2023-12-31",
+     * "use_cache": true
+     * }
+     * ```
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns DataResponse Successful Response
+     * @throws ApiError
+     */
+    public static fetchMacroData(data: DataFetchMacroDataData): CancelablePromise<DataFetchMacroDataResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/data/macro',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Fetch Industry Concept Data
+     * Fetch industry classification and concept sector data
+     *
+     * Provides access to market classification data:
+     * - **industry**: Industry classification data (traditional sectors like finance, technology, etc.)
+     * - **concept**: Concept sector data (thematic sectors like AI, new energy, etc.)
+     *
+     * This endpoint returns static reference data that doesn't require time range parameters.
+     *
+     * **Parameters:**
+     * - **data_type**: Type of classification data (industry/concept)
+     * - **use_cache**: Whether to use cached data if available (default: true)
+     *
+     * **Returns:**
+     * - **data**: List of classification records with codes, names, and descriptions
+     * - **count**: Total number of records returned
+     * - **columns**: List of available column names
+     *
+     * **Example:**
+     * ```json
+     * {
+     * "data_type": "industry",
+     * "use_cache": true
+     * }
+     * ```
+     *
+     * **Note:** This endpoint returns reference data and doesn't require start_date/end_date parameters.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns DataResponse Successful Response
+     * @throws ApiError
+     */
+    public static fetchIndustryConceptData(data: DataFetchIndustryConceptDataData): CancelablePromise<DataFetchIndustryConceptDataResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/data/industry-concept',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class FactorsService {
+    /**
+     * List Factors
+     * List all available factors with optional type filtering
+     *
+     * Args:
+     * factor_type: Optional factor type to filter by (technical, fundamental, custom, macro, sentiment)
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * List of factor information objects
+     * @param data The data for the request.
+     * @param data.factorType
+     * @returns FactorInfo Successful Response
+     * @throws ApiError
+     */
+    public static listFactors(data: FactorsListFactorsData = {}): CancelablePromise<FactorsListFactorsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/',
+            query: {
+                factor_type: data.factorType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Factor
+     * Get detailed information about a specific factor
+     *
+     * Args:
+     * factor_name: Name of the factor
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Detailed factor information
+     *
+     * Raises:
+     * HTTPException: If factor not found
+     * @param data The data for the request.
+     * @param data.factorName
+     * @returns FactorInfo Successful Response
+     * @throws ApiError
+     */
+    public static getFactor(data: FactorsGetFactorData): CancelablePromise<FactorsGetFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/{factor_name}',
+            path: {
+                factor_name: data.factorName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Unregister Factor
+     * Unregister/remvoe a factor from the system
+     *
+     * Args:
+     * factor_name: Name of the factor to remove
+     * current_user: Current authenticated user
+     *
+     * Raises:
+     * HTTPException: If factor not found or deletion fails
+     * @param data The data for the request.
+     * @param data.factorName
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static unregisterFactor(data: FactorsUnregisterFactorData): CancelablePromise<FactorsUnregisterFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/factors/{factor_name}',
+            path: {
+                factor_name: data.factorName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Calculate Factor
+     * Calculate factor values for specific  data and data range
+     *
+     * Args:
+     * request: Factor calculation request
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Factor calculation results
+     *
+     * Raises:
+     * HTTPException: If factor not found, data not available, or calculation fails
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns FactorCalculationResponse Successful Response
+     * @throws ApiError
+     */
+    public static calculateFactor(data: FactorsCalculateFactorData): CancelablePromise<FactorsCalculateFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/factors/calculate',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Factor Status
+     * Get the current  status and statistics of a specific factor
+     *
+     * Args:
+     * factor_name: Name of the factor
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Factor status information
+     *
+     * Raises:
+     * HTTPException: If factor not found
+     * @param data The data for the request.
+     * @param data.factorName
+     * @returns FactorStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getFactorStatus(data: FactorsGetFactorStatusData): CancelablePromise<FactorsGetFactorStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/{factor_name}/status',
+            path: {
+                factor_name: data.factorName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Register Factor
+     * Register a new factor in the system
+     *
+     * Args:
+     * request: Factor registration request
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Registered factor information
+     *
+     * Raises:
+     * HTTPException: If factor already exists or registration fails
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns FactorInfo Successful Response
+     * @throws ApiError
+     */
+    public static registerFactor(data: FactorsRegisterFactorData): CancelablePromise<FactorsRegisterFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/factors/register',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class ItemsService {
     /**
@@ -228,6 +673,417 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SignalsService {
+    /**
+     * List Signals
+     * List all signals with optional filtering
+     *
+     * Args:
+     * symbol: Filter by trading symbol
+     * page: Page number for pagination
+     * size: Page size for pagination
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Paginated list of signals
+     * @param data The data for the request.
+     * @param data.symbol
+     * @param data.page
+     * @param data.size
+     * @returns SignalListResponse Successful Response
+     * @throws ApiError
+     */
+    public static listSignals(data: SignalsListSignalsData = {}): CancelablePromise<SignalsListSignalsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/',
+            query: {
+                symbol: data.symbol,
+                page: data.page,
+                size: data.size
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Signal
+     * Create a new signal
+     *
+     * Args:
+     * request: Signal creation request
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Created signal information
+     *
+     * Raises:
+     * HTTPException: If signal creation fails
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SignalInfo Successful Response
+     * @throws ApiError
+     */
+    public static createSignal(data: SignalsCreateSignalData): CancelablePromise<SignalsCreateSignalResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/signals/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Signal
+     * Get specific signal by ID
+     *
+     * Args:
+     * signal_id: Signal ID
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * Signal information
+     *
+     * Raises:
+     * HTTPException: If signal not found
+     * @param data The data for the request.
+     * @param data.signalId
+     * @returns SignalInfo Successful Response
+     * @throws ApiError
+     */
+    public static getSignal(data: SignalsGetSignalData): CancelablePromise<SignalsGetSignalResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/{signal_id}',
+            path: {
+                signal_id: data.signalId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class StrategiesService {
+    /**
+     * List Strategies
+     * List all available trading strategies
+     *
+     * Returns a comprehensive list of all registered trading strategies
+     * that can be used for backtesting and live trading.
+     *
+     * **Returns:**
+     * - **data**: List of strategy information with name and description
+     * - **count**: Total number of available strategies
+     *
+     * **Example Response:**
+     * ```json
+     * {
+     * "data": [
+     * {
+     * "name": "rsi_mean_reversion",
+     * "description": "RSI-based mean reversion strategy"
+     * }
+     * ],
+     * "count": 1
+     * }
+     * ```
+     * @returns StrategiesList Successful Response
+     * @throws ApiError
+     */
+    public static listStrategies(): CancelablePromise<StrategiesListStrategiesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/'
+        });
+    }
+    
+    /**
+     * Get Strategy
+     * Get detailed information about a specific strategy
+     *
+     * Retrieves comprehensive details about a single trading strategy
+     * including its description, parameters, and configuration options.
+     *
+     * **Path Parameters:**
+     * - **strategy_name**: Name of the strategy to retrieve
+     *
+     * **Returns:**
+     * - **name**: Strategy name (identifier)
+     * - **description**: Detailed strategy description from docstring
+     *
+     * **Example:**
+     * GET /strategies/rsi_mean_reversion
+     *
+     * **Response:**
+     * ```json
+     * {
+     * "name": "rsi_mean_reversion",
+     * "description": "RSI-based mean reversion strategy that trades based on overbought/oversold conditions"
+     * }
+     * ```
+     *
+     * **Error Responses:**
+     * - 404: Strategy not found
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @returns StrategyInfo Successful Response
+     * @throws ApiError
+     */
+    public static getStrategy(data: StrategiesGetStrategyData): CancelablePromise<StrategiesGetStrategyResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}',
+            path: {
+                strategy_name: data.strategyName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Run Backtest
+     * Run a backtest for a specific trading strategy
+     *
+     * Executes a historical backtest of the specified strategy using
+     * the provided parameters and returns comprehensive performance metrics.
+     *
+     * **Path Parameters:**
+     * - **strategy_name**: Name of the strategy to backtest
+     *
+     * **Request Body:**
+     * - **symbol**: Stock symbol (e.g., "000001.SZ")
+     * - **start_date**: Backtest start date (YYYY-MM-DD)
+     * - **end_date**: Backtest end date (YYYY-MM-DD)
+     * - **initial_capital**: Starting capital amount (default: 1000000.0)
+     * - **commission**: Commission rate (default: 0.0003)
+     * - **commtype**: Commission type - "PERC" or "FIXED" (default: "PERC")
+     * - **commmin**: Minimum commission (default: 5.0)
+     * - **stocklike**: Whether instrument is stock-like (default: true)
+     * - **leverage**: Leverage ratio (default: 1.0)
+     * - **margin**: Margin requirement (optional)
+     * - **mode**: Trading mode (default: "BACKTEST")
+     *
+     * **Returns:**
+     * - **backtest_id**: Unique identifier for the backtest result
+     * - **strategy_name**: Name of the backtested strategy
+     * - **performance**: Comprehensive performance metrics
+     * - **chart_path**: Path to performance chart (if generated)
+     * - **status**: Backtest execution status
+     *
+     * **Example Request:**
+     * ```json
+     * {
+     * "symbol": "000001.SZ",
+     * "start_date": "2023-01-01",
+     * "end_date": "2023-12-31",
+     * "initial_capital": 1000000.0
+     * }
+     * ```
+     *
+     * **Error Responses:**
+     * - 404: Strategy not found
+     * - 400: Invalid parameters or data
+     * - 500: Server error during backtest execution
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.requestBody
+     * @returns BacktestResponse Successful Response
+     * @throws ApiError
+     */
+    public static runBacktest(data: StrategiesRunBacktestData): CancelablePromise<StrategiesRunBacktestResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/strategies/{strategy_name}/backtest',
+            path: {
+                strategy_name: data.strategyName
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Backtest Result
+     * Get detailed backtest result by ID
+     *
+     * Retrieves comprehensive backtest results including performance metrics,
+     * trade statistics, and chart data for a specific backtest execution.
+     *
+     * **Path Parameters:**
+     * - **strategy_name**: Name of the strategy
+     * - **backtest_id**: Unique identifier of the backtest result (UUID)
+     *
+     * **Returns:**
+     * - **backtest_id**: Unique identifier for the backtest
+     * - **strategy_name**: Strategy name used in the backtest
+     * - **symbol**: Stock symbol that was backtested
+     * - **start_date**: Backtest start date
+     * - **end_date**: Backtest end date
+     * - **initial_capital**: Starting capital used
+     * - **performance**: Detailed performance metrics
+     * - **chart_path**: Path to performance chart (if available)
+     * - **status**: Current status of the backtest
+     *
+     * **Example:**
+     * GET /strategies/rsi_mean_reversion/backtests/123e4567-e89b-12d3-a456-426614174000
+     *
+     * **Error Responses:**
+     * - 400: Invalid backtest ID format
+     * - 404: Backtest result not found
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.backtestId
+     * @returns BacktestResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestResult(data: StrategiesGetBacktestResultData): CancelablePromise<StrategiesGetBacktestResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}/backtests/{backtest_id}',
+            path: {
+                strategy_name: data.strategyName,
+                backtest_id: data.backtestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Backtest Result
+     * Delete a specific backtest result
+     *
+     * Permanently removes a backtest result from the database.
+     * This action cannot be undone.
+     *
+     * **Path Parameters:**
+     * - **strategy_name**: Name of the strategy
+     * - **backtest_id**: Unique identifier of the backtest result (UUID)
+     *
+     * **Returns:**
+     * - **message**: Confirmation message indicating successful deletion
+     *
+     * **Example:**
+     * DELETE /strategies/rsi_mean_reversion/backtests/123e4567-e89b-12d3-a456-426614174000
+     *
+     * **Response:**
+     * ```json
+     * {
+     * "message": "Backtest result deleted successfully"
+     * }
+     * ```
+     *
+     * **Error Responses:**
+     * - 400: Invalid backtest ID format
+     * - 404: Backtest result not found
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.backtestId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deleteBacktestResult(data: StrategiesDeleteBacktestResultData): CancelablePromise<StrategiesDeleteBacktestResultResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/strategies/{strategy_name}/backtests/{backtest_id}',
+            path: {
+                strategy_name: data.strategyName,
+                backtest_id: data.backtestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Backtest History
+     * Get paginated list of backtest history for a strategy
+     *
+     * Retrieves all historical backtest results for a specific strategy
+     * with pagination support for efficient data retrieval.
+     *
+     * **Path Parameters:**
+     * - **strategy_name**: Name of the strategy
+     *
+     * **Query Parameters:**
+     * - **page**: Page number (default: 1, min: 1)
+     * - **size**: Items per page (default: 20, max: 100)
+     *
+     * **Returns:**
+     * - **data**: List of backtest history items with key metrics
+     * - **count**: Total number of backtest results
+     * - **page**: Current page number
+     * - **size**: Items per page
+     * - **total_pages**: Total number of pages
+     *
+     * **Example:**
+     * GET /strategies/rsi_mean_reversion/backtests?page=1&size=10
+     *
+     * **Response:**
+     * ```json
+     * {
+     * "data": [
+     * {
+     * "backtest_id": "123e4567-e89b-12d3-a456-426614174000",
+     * "strategy_name": "rsi_mean_reversion",
+     * "symbol": "000001.SZ",
+     * "start_date": "2023-01-01",
+     * "end_date": "2023-12-31",
+     * "initial_capital": 1000000.0,
+     * "final_value": 1050000.0,
+     * "total_return": 0.05,
+     * "sharpe_ratio": 1.2,
+     * "max_drawdown": -0.03,
+     * "total_trades": 25,
+     * "win_rate": 0.6,
+     * "created_at": "2023-12-31T23:59:59Z"
+     * }
+     * ],
+     * "count": 1,
+     * "page": 1,
+     * "size": 20,
+     * "total_pages": 1
+     * }
+     * ```
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.page
+     * @param data.size
+     * @returns BacktestHistoryList Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestHistory(data: StrategiesGetBacktestHistoryData): CancelablePromise<StrategiesGetBacktestHistoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}/backtests',
+            path: {
+                strategy_name: data.strategyName
+            },
+            query: {
+                page: data.page,
+                size: data.size
+            },
             errors: {
                 422: 'Validation Error'
             }

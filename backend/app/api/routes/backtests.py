@@ -54,9 +54,11 @@ class GlobalBacktestItem(BaseModel):
     start_date: str = Field(..., description="Start date")
     end_date: str = Field(..., description="End date")
     initial_capital: float = Field(..., description="Initial capital")
-    final_value: float = Field(..., description="Final portfolio value")
-    total_return: float = Field(..., description="Total return")
-    total_return_pct: float = Field(..., description="Total return percentage")
+    final_value: Optional[float] = Field(None, description="Final portfolio value")
+    total_return: Optional[float] = Field(None, description="Total return")
+    total_return_pct: Optional[float] = Field(
+        None, description="Total return percentage"
+    )
     sharpe_ratio: Optional[float] = Field(None, description="Sharpe ratio")
     max_drawdown: Optional[float] = Field(None, description="Maximum drawdown")
     total_trades: Optional[int] = Field(None, description="Total number of trades")
@@ -426,3 +428,85 @@ async def compare_backtests(
     except Exception as e:
         logger.error(f"Error comparing backtests: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{backtest_id}", response_model=GlobalBacktestItem)
+async def get_backtest_by_id(
+    backtest_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> GlobalBacktestItem:
+    """
+    Get a single backtest by ID
+
+    Args:
+        backtest_id: Backtest UUID
+        session: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        Backtest details
+
+    Raises:
+        HTTPException: If backtest not found or invalid ID
+    """
+    try:
+        # Convert string to UUID
+        try:
+            backtest_uuid = UUID(backtest_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid backtest ID format: {backtest_id}"
+            )
+
+        # Query database
+        statement = select(BacktestResult).where(BacktestResult.id == backtest_uuid)
+        result = session.exec(statement).first()
+
+        if not result:
+            raise HTTPException(
+                status_code=404, detail=f"Backtest not found: {backtest_id}"
+            )
+
+        # Parse result_data JSON
+        result_data = json.loads(result.result_data) if result.result_data else {}
+        performance = result_data.get("performance", {})
+
+        # Build response
+        item = GlobalBacktestItem(
+            backtest_id=str(result.id),
+            strategy_name=result.strategy_name,
+            symbol=result.symbol,
+            start_date=result.start_date,
+            end_date=result.end_date,
+            initial_capital=result.initial_capital,
+            final_value=result.final_value,
+            total_return=result.total_return,
+            total_return_pct=result.total_return,
+            sharpe_ratio=result.sharpe_ratio,
+            max_drawdown=result.max_drawdown,
+            total_trades=result.total_trades,
+            winning_trades=result.winning_trades,
+            losing_trades=result.losing_trades,
+            win_rate=result.win_rate,
+            avg_win=result.avg_win,
+            avg_loss=result.avg_loss,
+            avg_annual_return=result.avg_annual_return,
+            vwr=result.vwr,
+            calmar_ratio=result.calmar_ratio,
+            sqn=result.sqn,
+            status=result.status if hasattr(result, "status") else "completed",
+            created_at=result.created_at.isoformat() if result.created_at else None,
+            created_by=None,
+        )
+
+        logger.info(f"Retrieved backtest {backtest_id} for user {current_user.id}")
+        return item
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving backtest {backtest_id}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve backtest: {str(e)}"
+        )

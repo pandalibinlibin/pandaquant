@@ -104,6 +104,25 @@
     "createdAt": "创建时间",
     "view": "查看详情",
     "detail_title": "回测详情",
-    "actions": "操作"
+    "actions": "操作",
+    "basic_info": "基本信息",
+    "performance_metrics": "性能指标",
+    "trading_stats": "交易统计",
+    "risk_metrics": "风险指标",
+    "start_date": "开始日期",
+    "end_date": "结束日期",
+    "initial_capital": "初始资金",
+    "final_value": "最终资金",
+    "total_return_abs": "总收益",
+    "avg_annual_return": "平均年化收益率",
+    "calmar_ratio": "卡玛比率",
+    "vwr": "变异性加权收益",
+    "sqn": "系统质量数",
+    "winning_trades": "盈利次数",
+    "losing_trades": "亏损次数",
+    "avg_win": "平均盈利",
+    "avg_loss": "平均亏损",
+    "profit_factor": "盈亏比",
+    "status": "状态"
   }
 }

@@ -2364,6 +2364,108 @@ export const Route = createFileRoute("/_layout/backtest/$id")({
 
 ---
 
+## 最新进展 (2025-12-02)
+
+### 回测指标修复 ✅ 已完成
+
+#### 问题描述
+回测详情页面中，夏普比率、平均年化收益率、卡玛比率显示为 `None` 或 `0`，无法正确展示策略性能。
+
+#### 根本原因
+1. **夏普比率**：Backtrader 的 `SharpeRatio` 分析器缺少必要参数（`riskfreerate`、`annualize`、`timeframe`）
+2. **平均年化收益率**：提取逻辑错误，`AnnualReturn` 分析器返回的是年份字典，而非单一值
+3. **卡玛比率**：Backtrader 的 `Calmar` 分析器返回的值过小或为 `NaN`，需要手动计算
+
+#### 解决方案
+
+**1. 夏普比率修复**
+```python
+# 配置 SharpeRatio 分析器参数
+cerebro.addanalyzer(
+    bt.analyzers.SharpeRatio,
+    _name="sharpe",
+    riskfreerate=0.03,      # 无风险利率 3%
+    annualize=True,         # 年化
+    timeframe=feed_timeframe  # 动态时间框架
+)
+
+# 提取逻辑
+sharpe_data = analyzers.sharpe.get_analysis()
+if sharpe_data and "sharperatio" in sharpe_data:
+    sharpe_ratio = sharpe_data["sharperatio"]
+    if sharpe_ratio is not None:
+        performance["sharpe_ratio"] = sharpe_ratio
+```
+
+**2. 平均年化收益率修复**
+```python
+# AnnualReturn 返回格式：{2023: 0.15, 2024: -0.08, ...}
+annual_return_data = analyzers.annualreturn.get_analysis()
+if annual_return_data:
+    # 提取所有年份的收益率
+    annual_returns = [v for v in annual_return_data.values() if v is not None]
+    if annual_returns:
+        # 计算平均值
+        performance["avg_annual_return"] = sum(annual_returns) / len(annual_returns)
+```
+
+**3. 卡玛比率修复**
+```python
+# 尝试从分析器提取
+calmar_data = analyzers.calmar.get_analysis()
+calmar_values = [
+    v for v in calmar_data.values()
+    if v is not None and not (isinstance(v, float) and v != v) and v != 0.0
+]
+
+# 使用标志变量控制流程
+calmar_from_analyzer = None
+if calmar_values:
+    calmar_from_analyzer = calmar_values[-1]
+    # 阈值检查：绝对值必须 > 0.001
+    if abs(calmar_from_analyzer) > 0.001:
+        performance["calmar_ratio"] = calmar_from_analyzer
+    else:
+        calmar_from_analyzer = None  # 标记为无效
+
+# 手动计算兜底
+if calmar_from_analyzer is None:
+    avg_annual_return = performance.get("avg_annual_return")
+    max_drawdown = performance.get("max_drawdown")
+    if avg_annual_return is not None and max_drawdown is not None and max_drawdown != 0:
+        # Calmar Ratio = Annual Return / Max Drawdown
+        performance["calmar_ratio"] = avg_annual_return / max_drawdown
+```
+
+**4. 动态时间框架检测**
+```python
+# 从数据源自动检测时间框架
+primary_feed = cerebro.datas[0]
+feed_timeframe = primary_feed._timeframe  # bt.TimeFrame.Days 等
+```
+
+#### 修改文件
+- `backend/app/domains/strategies/services.py`
+  - 行 215-250：配置分析器参数，动态检测时间框架
+  - 行 313-327：修复夏普比率提取逻辑
+  - 行 371-392：修复平均年化收益率提取逻辑
+  - 行 426-465：修复卡玛比率提取逻辑，添加手动计算兜底
+
+#### 验证结果
+- ✅ **夏普比率**：-2.34（正确计算）
+- ✅ **平均年化收益率**：-17.66%（正确提取）
+- ✅ **卡玛比率**：-0.91（手动计算：-0.1766 / 0.1939）
+- ✅ **前端显示**：所有指标正常展示
+
+#### 技术要点
+1. **Backtrader 分析器配置**：必须提供完整参数才能正确计算
+2. **数据结构理解**：不同分析器返回不同格式（单值、字典、时间序列）
+3. **鲁棒性设计**：分析器失败时使用手动计算兜底
+4. **阈值过滤**：过滤掉 `NaN`、`0.0`、过小值等无效数据
+5. **日志追踪**：详细记录提取和计算过程，便于调试
+
+---
+
 ## 最新进展 (2025-11-26)
 
 ### 信号监控模块 ✅ 已完成
@@ -2381,4 +2483,4 @@ export const Route = createFileRoute("/_layout/backtest/$id")({
 2. ✅ 因子管理模块
 3. ✅ 策略管理模块
 4. ✅ 信号监控模块
-5. ✅ 回测系统（完整打通）
+5. ✅ 回测系统（完整打通，指标修复完成）

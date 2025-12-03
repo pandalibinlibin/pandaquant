@@ -212,6 +212,12 @@ class StrategyService:
                 "No valid data feeds found. Ensure at least one DataGroup has OHLCV data."
             )
 
+        # Determine timeframe from the first feed for analyzer configuration
+        # This ensures analyzers use the correct timeframe (Days, Minutes, etc.)
+        primary_feed = feeds[0]
+        analyzer_timeframe = getattr(primary_feed, '_timeframe', bt.TimeFrame.Days)
+        logger.info(f"Using timeframe {analyzer_timeframe} for analyzers")
+
         cerebro = bt.Cerebro()
         for feed in feeds:
             cerebro.adddata(feed)
@@ -219,7 +225,14 @@ class StrategyService:
         cerebro.addstrategy(strategy_class)
 
         cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
+        # SharpeRatio: set riskfreerate and annualize for proper calculation
+        cerebro.addanalyzer(
+            bt.analyzers.SharpeRatio,
+            _name="sharpe",
+            riskfreerate=0.03,  # 3% annual risk-free rate
+            annualize=True,
+            timeframe=analyzer_timeframe,
+        )
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
 
@@ -227,7 +240,12 @@ class StrategyService:
         cerebro.addanalyzer(bt.analyzers.TimeDrawDown, _name="timedrawdown")
 
         cerebro.addanalyzer(bt.analyzers.VWR, _name="vwr")
-        cerebro.addanalyzer(bt.analyzers.Calmar, _name="calmar")
+        # Calmar: set timeframe for proper calculation
+        cerebro.addanalyzer(
+            bt.analyzers.Calmar,
+            _name="calmar",
+            timeframe=analyzer_timeframe,
+        )
         cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")
         cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name="annualreturn")
 
@@ -302,13 +320,31 @@ class StrategyService:
             analyzers = strategy_result.analyzers
             performance = {}
 
+            # Add debug logging
+            logger.info("=== Starting analyzer extraction ===")
+            logger.info(f"Available analyzers: {dir(analyzers)}")
+
             if hasattr(analyzers, "returns") and analyzers.returns:
                 returns_data = analyzers.returns.get_analysis()
                 performance["total_return"] = returns_data.get("rtot", 0.0)
 
+            logger.info("Checking sharpe analyzer...")
             if hasattr(analyzers, "sharpe") and analyzers.sharpe:
+                logger.info("Sharpe analyzer exists, extracting data...")
                 sharpe_data = analyzers.sharpe.get_analysis()
-                performance["sharpe_ratio"] = sharpe_data.get("sharperatio", None)
+                logger.info(f"Sharpe data: {sharpe_data}")
+                sharpe_value = sharpe_data.get("sharperatio", None)
+                # Sharpe ratio can be None if there's insufficient data or no variance
+                if sharpe_value is not None:
+                    performance["sharpe_ratio"] = sharpe_value
+                    logger.info(f"Sharpe ratio extracted: {sharpe_value}")
+                else:
+                    logger.warning(
+                        "Sharpe ratio is None - insufficient data or no variance in returns"
+                    )
+                    performance["sharpe_ratio"] = None
+            else:
+                logger.warning("Sharpe analyzer not found or is None")
 
             if hasattr(analyzers, "drawdown") and analyzers.drawdown:
                 dd_data = analyzers.drawdown.get_analysis()
@@ -352,24 +388,85 @@ class StrategyService:
                     trade_data.get("lost", {}).get("pnl", {}).get("average", 0.0)
                 )
 
+            logger.info("Checking annualreturn analyzer...")
             if hasattr(analyzers, "annualreturn") and analyzers.annualreturn:
+                logger.info("AnnualReturn analyzer exists, extracting data...")
                 annual_data = analyzers.annualreturn.get_analysis()
+                logger.info(f"Annual data: {annual_data}")
                 if annual_data:
-                    annual_returns = annual_data.get("rtot", [])
+                    # AnnualReturn analyzer returns dict with years as keys: {2023: -0.176, 2024: 0.05}
+                    # Extract values (annual returns for each year)
+                    annual_returns = list(annual_data.values())
+                    logger.info(f"Annual returns extracted: {annual_returns}")
                     if annual_returns:
+                        # Calculate average of all years
                         performance["avg_annual_return"] = sum(annual_returns) / len(
                             annual_returns
                         )
                         # Keep avg_annual_return_pct as decimal for consistency
-                        performance["avg_annual_return_pct"] = performance["avg_annual_return"]
+                        performance["avg_annual_return_pct"] = performance[
+                            "avg_annual_return"
+                        ]
+                        logger.info(
+                            f"Avg annual return calculated: {performance.get('avg_annual_return')}"
+                        )
+                    else:
+                        logger.warning("Annual returns list is empty")
+                else:
+                    logger.warning("Annual data is empty")
+            else:
+                logger.warning("AnnualReturn analyzer not found or is None")
 
             if hasattr(analyzers, "vwr") and analyzers.vwr:
                 vwr_data = analyzers.vwr.get_analysis()
                 performance["vwr"] = vwr_data.get("vwr", None)
 
+            logger.info("Checking calmar analyzer...")
             if hasattr(analyzers, "calmar") and analyzers.calmar:
+                logger.info("Calmar analyzer exists, extracting data...")
                 calmar_data = analyzers.calmar.get_analysis()
-                performance["calmar_ratio"] = calmar_data.get("calmar", None)
+                logger.info(f"Calmar data: {calmar_data}")
+                # Calmar analyzer returns dict with dates as keys and calmar values
+                # Get the last (most recent) non-NaN value
+                calmar_values = [
+                    v
+                    for v in calmar_data.values()
+                    if v is not None and not (isinstance(v, float) and v != v) and v != 0.0
+                ]  # Filter out None, NaN, and 0.0
+                
+                # Try to use analyzer value if valid
+                calmar_from_analyzer = None
+                if calmar_values:
+                    calmar_from_analyzer = calmar_values[-1]
+                    # Check if the value is reasonable (absolute value > 0.001)
+                    if abs(calmar_from_analyzer) > 0.001:
+                        performance["calmar_ratio"] = calmar_from_analyzer
+                        logger.info(
+                            f"Calmar ratio extracted from analyzer: {performance['calmar_ratio']}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Calmar ratio from analyzer too small ({calmar_from_analyzer}), will calculate manually"
+                        )
+                        calmar_from_analyzer = None  # Mark as invalid
+                
+                # If analyzer failed or returned invalid value, calculate manually
+                if calmar_from_analyzer is None:
+                    # Manually calculate Calmar ratio if analyzer fails
+                    # Calmar = Annual Return / Max Drawdown
+                    avg_annual_return = performance.get("avg_annual_return")
+                    max_drawdown = performance.get("max_drawdown")
+                    if avg_annual_return is not None and max_drawdown is not None and max_drawdown != 0:
+                        performance["calmar_ratio"] = avg_annual_return / max_drawdown
+                        logger.info(
+                            f"Calmar ratio calculated manually: {performance['calmar_ratio']} "
+                            f"(annual_return={avg_annual_return}, max_dd={max_drawdown})"
+                        )
+                    else:
+                        logger.warning("Cannot calculate Calmar ratio - missing annual return or max drawdown")
+                        performance["calmar_ratio"] = None
+            else:
+                logger.warning("Calmar analyzer not found or is None")
 
             if hasattr(analyzers, "sqn") and analyzers.sqn:
                 sqn_data = analyzers.sqn.get_analysis()
@@ -411,8 +508,8 @@ class StrategyService:
             performance["final_value"] = final_value
             # Calculate total_return_pct as decimal (e.g., -0.1766 for -17.66%)
             performance["total_return_pct"] = (
-                (final_value - initial_capital) / initial_capital
-            )
+                final_value - initial_capital
+            ) / initial_capital
 
             # Save backtest result to database
             backtest_result = BacktestResult(

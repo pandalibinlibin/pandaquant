@@ -104,6 +104,25 @@
     "createdAt": "Created At",
     "view": "View Details",
     "detail_title": "Backtest Detail",
-    "actions": "Actions"
+    "actions": "Actions",
+    "basic_info": "Basic Information",
+    "performance_metrics": "Performance Metrics",
+    "trading_stats": "Trading Statistics",
+    "risk_metrics": "Risk Metrics",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "initial_capital": "Initial Capital",
+    "final_value": "Final Value",
+    "total_return_abs": "Total Return",
+    "avg_annual_return": "Avg Annual Return",
+    "calmar_ratio": "Calmar Ratio",
+    "vwr": "VWR",
+    "sqn": "SQN",
+    "winning_trades": "Winning Trades",
+    "losing_trades": "Losing Trades",
+    "avg_win": "Avg Win",
+    "avg_loss": "Avg Loss",
+    "profit_factor": "Profit Factor",
+    "status": "Status"
   }
 }
