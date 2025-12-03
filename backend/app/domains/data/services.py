@@ -47,10 +47,44 @@ class DataService:
                 )
 
                 if not cached_data.empty:
-                    logger.info(
-                        f"Using cached {data_type} data for {symbol} from InfluxDB"
-                    )
-                    return cached_data
+                    # Check if cached data covers the requested time range
+                    from datetime import datetime
+                    
+                    cached_start = cached_data['timestamp'].min()
+                    cached_end = cached_data['timestamp'].max()
+                    requested_start = pd.to_datetime(start_date)
+                    requested_end = pd.to_datetime(end_date)
+                    
+                    # Convert to timezone-naive for comparison if needed
+                    if cached_start.tzinfo is not None:
+                        cached_start = cached_start.tz_localize(None)
+                    if cached_end.tzinfo is not None:
+                        cached_end = cached_end.tz_localize(None)
+                    
+                    # Check if cache covers the full requested range
+                    cache_covers_range = (cached_start <= requested_start and cached_end >= requested_end)
+                    
+                    # Calculate expected data points (rough estimate: trading days ~= 250/year)
+                    expected_days = (requested_end - requested_start).days
+                    expected_points = int(expected_days * 0.7)  # ~70% are trading days
+                    actual_points = len(cached_data)
+                    
+                    # Cache is valid if it covers the range AND has reasonable amount of data
+                    cache_is_sufficient = cache_covers_range and actual_points >= min(expected_points * 0.8, 10)
+                    
+                    if cache_is_sufficient:
+                        logger.info(
+                            f"Using cached {data_type} data for {symbol} from InfluxDB "
+                            f"({actual_points} points, covers {cached_start.date()} to {cached_end.date()})"
+                        )
+                        return cached_data
+                    else:
+                        logger.info(
+                            f"Cached data insufficient for {symbol}: "
+                            f"requested {requested_start.date()} to {requested_end.date()}, "
+                            f"cached {cached_start.date()} to {cached_end.date()} ({actual_points} points, expected ~{expected_points}). "
+                            f"Fetching fresh data from source."
+                        )
                 else:
                     logger.info(
                         f"No cached data found for {symbol}, fetching from data source"

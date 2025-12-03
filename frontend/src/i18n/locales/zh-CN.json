@@ -123,6 +123,14 @@
     "avg_win": "平均盈利",
     "avg_loss": "平均亏损",
     "profit_factor": "盈亏比",
-    "status": "状态"
+    "status": "状态",
+    "create_title": "创建新回测",
+    "select_strategy": "选择策略",
+    "select_strategy_placeholder": "请选择一个策略",
+    "input_symbol": "股票代码",
+    "input_symbol_placeholder": "例如: 000001.SZ",
+    "date_range": "日期范围",
+    "submit": "开始回测",
+    "submitting": "提交中..."
   }
 }

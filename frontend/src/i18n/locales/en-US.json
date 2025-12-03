@@ -123,6 +123,14 @@
     "avg_win": "Avg Win",
     "avg_loss": "Avg Loss",
     "profit_factor": "Profit Factor",
-    "status": "Status"
+    "status": "Status",
+    "create_title": "Create New Backtest",
+    "select_strategy": "Select Strategy",
+    "select_strategy_placeholder": "Please select a strategy",
+    "input_symbol": "Stock Symbol",
+    "input_symbol_placeholder": "e.g., 000001.SZ",
+    "date_range": "Date Range",
+    "submit": "Start Backtest",
+    "submitting": "Submitting..."
   }
 }

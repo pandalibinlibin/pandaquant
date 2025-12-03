@@ -2484,3 +2484,244 @@ feed_timeframe = primary_feed._timeframe  # bt.TimeFrame.Days 等
 3. ✅ 策略管理模块
 4. ✅ 信号监控模块
 5. ✅ 回测系统（完整打通，指标修复完成）
+6. ✅ 回测表单模块（前端交互完整实现）
+
+---
+
+## 最新进展 (2025-12-03)
+
+### 回测表单模块 ✅ 已完成
+
+#### 核心功能实现
+- ✅ **回测表单组件**：BacktestForm 两列布局，美观紧凑
+- ✅ **动态策略加载**：从后端 API 自动获取可用策略列表
+- ✅ **表单验证**：必填字段验证（策略、股票代码、日期范围）
+- ✅ **提交功能**：异步提交回测请求到后端
+- ✅ **进度轮询**：自动轮询回测状态，每 5 秒检查一次
+- ✅ **自动刷新**：回测完成后自动刷新页面显示结果
+- ✅ **UI 优化**：清晰的成功提示、进度显示、错误处理
+- ✅ **数据缓存修复**：智能缓存验证，自动检测数据范围和完整性
+
+#### 技术实现
+
+**前端组件**：
+```tsx
+// 文件位置：frontend/src/components/Backtests/BacktestForm.tsx
+- 两列响应式布局（Grid）
+- 动态策略下拉框（从 API 获取）
+- 表单状态管理（useState）
+- 轮询机制（useEffect + setTimeout）
+- 进度显示（Spinner + 计数器）
+```
+
+**后端缓存优化**：
+```python
+# 文件位置：backend/app/domains/data/services.py
+# 智能缓存验证逻辑（第 50-87 行）
+- 检查缓存时间范围是否覆盖请求范围
+- 检查缓存数据点数量是否充足
+- 预期交易日计算（约 70% 的日历天数）
+- 缓存不足时自动重新下载完整数据
+```
+
+#### 用户体验流程
+
+1. **填写表单**：
+   - 选择策略：`DualMovingAverageStrategy`
+   - 输入股票代码：`000001.SZ`
+   - 选择日期范围：`2024-01-01` 至 `2024-11-30`
+   - 设置初始资金：`100000`
+
+2. **提交回测**：
+   - 点击"开始回测"按钮
+   - 按钮显示"提交中..."加载动画
+   - 提交成功后显示绿色提示框
+
+3. **进度监控**：
+   - 显示 Spinner 动画
+   - 实时更新轮询计数："已检查 X 次 / 最多 20 次"
+   - 提示信息："正在后台运行回测，预计需要几秒到几分钟..."
+
+4. **自动刷新**：
+   - 每 5 秒查询一次回测状态
+   - 状态为 "completed" 时自动刷新页面
+   - 显示完整的回测结果数据
+
+#### 解决的关键问题
+
+**1. 数据缓存逻辑缺陷**
+- **问题**：缓存只有 4 天数据，但请求 11 个月数据时仍返回缓存
+- **原因**：缓存验证只检查是否存在，不检查范围和完整性
+- **解决**：添加智能缓存验证
+  ```python
+  # 检查时间范围覆盖
+  cache_covers_range = (cached_start <= requested_start and cached_end >= requested_end)
+  
+  # 检查数据点充足性
+  expected_points = int(expected_days * 0.7)  # 70% 为交易日
+  cache_is_sufficient = cache_covers_range and actual_points >= min(expected_points * 0.8, 10)
+  ```
+
+**2. 回测状态轮询**
+- **问题**：回测是同步执行的，但前端需要友好的等待体验
+- **解决**：实现轮询机制
+  - 提交成功后保存 `backtest_id`
+  - 每 5 秒查询一次状态
+  - 最多轮询 20 次（100 秒）
+  - 完成后自动刷新页面
+
+**3. UI 显示逻辑优化**
+- **问题**：用户反馈显示顺序不够直观
+- **解决**：改进成功提示 UI
+  - 左侧绿色边框强调
+  - 分层文字说明（标题、说明、进度）
+  - 实时更新轮询计数
+  - 明确告知会自动刷新
+
+#### 修改文件清单
+
+**新增文件**：
+1. `frontend/src/components/Backtests/BacktestForm.tsx` - 回测表单组件（241 行）
+
+**修改文件**：
+1. `backend/app/domains/data/services.py` - 数据缓存验证逻辑（第 40-91 行）
+2. `frontend/src/routes/_layout/backtests.tsx` - 集成 BacktestForm 组件
+
+**国际化配置**：
+- `frontend/src/i18n/locales/zh-CN.json` - 回测表单中文翻译
+- `frontend/src/i18n/locales/en-US.json` - 回测表单英文翻译
+
+#### 技术要点
+
+**1. React Hooks 使用**：
+```tsx
+// 表单状态
+const [strategyName, setStrategyName] = useState("");
+const [symbol, setSymbol] = useState("");
+
+// 提交状态
+const [submitting, setSubmitting] = useState(false);
+const [submitSuccess, setSubmitSuccess] = useState(false);
+
+// 轮询状态
+const [backtestId, setBacktestId] = useState<string | null>(null);
+const [pollingCount, setPollingCount] = useState(0);
+```
+
+**2. 轮询机制实现**：
+```tsx
+useEffect(() => {
+  if (backtestId && pollingCount < 20) {
+    const timer = setTimeout(() => {
+      checkBacktestStatus(backtestId);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }
+}, [backtestId, pollingCount]);
+```
+
+**3. 缓存验证算法**：
+```python
+# 时间范围检查
+cache_covers_range = (cached_start <= requested_start and cached_end >= requested_end)
+
+# 数据充足性检查
+expected_days = (requested_end - requested_start).days
+expected_points = int(expected_days * 0.7)  # 约 70% 为交易日
+cache_is_sufficient = cache_covers_range and actual_points >= min(expected_points * 0.8, 10)
+```
+
+#### 测试验证
+
+**功能测试**：
+- ✅ 策略列表动态加载成功
+- ✅ 表单验证正确工作（必填字段检查）
+- ✅ 提交请求成功发送到后端
+- ✅ 轮询机制正常工作（每 5 秒检查一次）
+- ✅ 回测完成后页面自动刷新
+- ✅ 回测结果数据正常显示（收益率、夏普比率、交易次数等）
+
+**数据测试**：
+- ✅ 缓存不足时自动重新下载数据
+- ✅ 下载完整数据（2024-01-01 至 2024-11-29，约 230 条交易日数据）
+- ✅ 回测结果有真实数据（收益率 -1.31%，夏普比率 -0.15，交易 9 次）
+
+**UI 测试**：
+- ✅ 两列布局在桌面端显示良好
+- ✅ 移动端自动切换为单列布局
+- ✅ 加载动画和进度提示清晰直观
+- ✅ 错误提示友好明确
+
+#### 开发经验总结
+
+**1. 增量开发的重要性**：
+- 每次只修改一小步（添加状态、添加函数、修改 UI）
+- 及时验证每一步的效果
+- 避免一次性大改动导致难以调试
+
+**2. 用户体验优先**：
+- 清晰的状态反馈（提交中、运行中、完成）
+- 实时的进度显示（轮询计数）
+- 友好的错误提示（验证失败、API 错误）
+
+**3. 缓存策略设计**：
+- 不能简单地"有缓存就用"
+- 必须验证缓存的有效性（范围、完整性）
+- 提供详细的日志输出便于调试
+
+**4. 异步操作处理**：
+- 合理使用 `async/await`
+- 正确处理加载状态和错误状态
+- 避免阻塞用户界面
+
+#### 下一步优化方向
+
+**1. 因子管理页面重构**（已识别问题）：
+- 当前显示因子实例（不合理）
+- 应该显示因子类（类似策略管理）
+- 需要后端提供因子类列表 API
+
+**2. 策略详情页面**（新需求）：
+- 显示策略的 DataGroup 配置
+- 显示使用的数据源和因子实例
+- 显示因子参数配置
+- 提供策略编辑功能
+
+**3. 回测结果可视化**：
+- K 线图展示
+- 收益曲线图
+- 回撤曲线图
+- 交易信号标注
+
+**4. 批量回测功能**：
+- 支持多个股票批量回测
+- 支持参数扫描优化
+- 并行执行提高效率
+
+### 架构优化建议
+
+**因子管理架构**：
+```
+当前（不合理）：
+因子管理页面 → 显示因子实例（MA_5, MA_20 等）
+
+应该改为：
+因子管理页面 → 显示因子类（MovingAverageFactor, RSIFactor 等）
+策略详情页面 → 显示 DataGroup 配置 → 显示因子实例
+```
+
+**策略详情架构**：
+```
+策略详情页面：
+├── 策略基本信息（名称、描述）
+├── DataGroup 配置
+│   ├── 数据类型（daily, minute 等）
+│   ├── 数据字段（OHLCV 等）
+│   └── 因子实例列表
+│       ├── MA_5_SMA (MovingAverageFactor, period=5)
+│       ├── MA_20_SMA (MovingAverageFactor, period=20)
+│       └── RSI_14 (RSIFactor, period=14)
+└── 回测历史记录
+```
+
+---
