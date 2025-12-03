@@ -21,7 +21,7 @@ function FactorList({ factorType }: FactorListProps) {
 
       const response = await request(OpenAPI, {
         method: "GET",
-        url: "/api/v1/factors/",
+        url: "/api/v1/factors/classes",
       });
 
       setFactors(response || []);
@@ -67,21 +67,18 @@ function FactorList({ factorType }: FactorListProps) {
       <Table.Root size="sm" variant="outline">
         <Table.Header>
           <Table.Row>
-            <Table.ColumnHeader>{t("factors.factorName")}</Table.ColumnHeader>
-            <Table.ColumnHeader>{t("factors.category")}</Table.ColumnHeader>
-            <Table.ColumnHeader>{t("factors.factorClass")}</Table.ColumnHeader>
-            <Table.ColumnHeader>{t("factors.description")}</Table.ColumnHeader>
-            <Table.ColumnHeader>{t("factors.parameters")}</Table.ColumnHeader>
-            <Table.ColumnHeader>
-              {t("factors.requiredFields")}
-            </Table.ColumnHeader>
-            <Table.ColumnHeader>{t("factors.status")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="20%">{t("factors.className")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="12%">{t("factors.factorType")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="12%">{t("factors.module")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="20%">{t("factors.parameters")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="20%">{t("factors.requiredFields")}</Table.ColumnHeader>
+            <Table.ColumnHeader w="16%">{t("factors.description")}</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
           {factors.length === 0 ? (
             <Table.Row>
-              <Table.Cell colSpan={7} textAlign="center" py={8}>
+              <Table.Cell colSpan={6} textAlign="center" py={8}>
                 <Text color="gray.500" fontSize="lg">
                   {t("factors.noFactors")}
                 </Text>
@@ -89,48 +86,42 @@ function FactorList({ factorType }: FactorListProps) {
             </Table.Row>
           ) : (
             factors.map((factor: any) => (
-              <Table.Row key={factor.name}>
-                <Table.Cell fontWeight="medium">{factor.name}</Table.Cell>
+              <Table.Row key={factor.class_name}>
+                <Table.Cell fontWeight="medium" color="blue.600">
+                  {factor.display_name}
+                </Table.Cell>
                 <Table.Cell>
-                  <Text color="blue.600">
-                    {t(`factors.${factor.factor_type}`)}
+                  <Text fontSize="sm" color="purple.600">
+                    {factor.factor_type}
                   </Text>
                 </Table.Cell>
                 <Table.Cell>
-                  <Text fontSize="xs" color="purple.600" fontFamily="mono">
-                    {factor.factor_class || "-"}
+                  <Text fontSize="sm" color="gray.600">
+                    {factor.module}
                   </Text>
                 </Table.Cell>
                 <Table.Cell>
-                  <Text color="gray.600" fontSize="sm">
-                    {factor.description}
-                  </Text>
-                </Table.Cell>
-                <Table.Cell>
-                  <Text fontSize="xs" color="gray.500">
-                    {factor.parameters &&
-                    Object.keys(factor.parameters).length > 0
-                      ? Object.entries(factor.parameters)
-                          .map(([key, value]) => `${key}=${value}`)
+                  <Text fontSize="xs" color="gray.600">
+                    {factor.parameters && factor.parameters.length > 0
+                      ? factor.parameters
+                          .map(
+                            (p: any) =>
+                              `${p.name}: ${p.type}${p.default !== undefined && p.default !== null ? ` = ${p.default}` : ""}`
+                          )
                           .join(", ")
                       : "-"}
                   </Text>
                 </Table.Cell>
                 <Table.Cell>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="gray.600">
                     {factor.required_fields && factor.required_fields.length > 0
                       ? factor.required_fields.join(", ")
                       : "-"}
                   </Text>
                 </Table.Cell>
                 <Table.Cell>
-                  <Text
-                    color={
-                      factor.status === "active" ? "green.600" : "gray.500"
-                    }
-                    fontSize="sm"
-                  >
-                    {t(`factors.${factor.status}`)}
+                  <Text fontSize="xs" color="gray.500">
+                    {factor.description}
                   </Text>
                 </Table.Cell>
               </Table.Row>

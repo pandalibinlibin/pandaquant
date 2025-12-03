@@ -55,6 +55,10 @@
     "noData": "No data available"
   },
   "factors": {
+    "className": "Factor Class",
+    "factorType": "Factor Type",
+    "module": "Module",
+    "description": "Description",
     "title": "Factor Management",
     "loading": "Loading factors...",
     "noFactors": "No factor data available",

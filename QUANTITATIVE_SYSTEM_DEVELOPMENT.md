@@ -2725,3 +2725,246 @@ cache_is_sufficient = cache_covers_range and actual_points >= min(expected_point
 ```
 
 ---
+
+## 最新进展 (2025-12-03)
+
+### 因子管理页面重构 ✅ 已完成
+
+#### 核心功能实现
+- ✅ **因子类自动发现**：使用反射机制自动扫描所有因子类
+- ✅ **参数定义提取**：自动提取因子类的参数名称、类型、默认值
+- ✅ **所需字段提取**：通过临时实例获取因子所需的数据字段
+- ✅ **后端 API 创建**：新增 `/api/v1/factors/classes` 端点
+- ✅ **前端页面重构**：显示因子类而非实例，展示完整配置信息
+- ✅ **多语言支持**：所有标签使用 i18n 翻译键
+
+#### 技术实现
+
+**后端服务方法**：
+```python
+# 文件位置：backend/app/domains/factors/services.py
+def list_factor_classes(self) -> List[Dict[str, Any]]:
+    """
+    List all available factor classes (not instances)
+    Automatically discovers all Factor subclasses with detailed metadata
+    """
+    import inspect
+    from . import technical, fundamental, report
+    
+    def get_class_metadata(cls, factor_type: str, module: str) -> Dict[str, Any]:
+        # 使用 inspect.signature 提取参数定义
+        sig = inspect.signature(cls.__init__)
+        parameters = []
+        
+        for param_name, param in sig.parameters.items():
+            if param_name in ["self", "name", "factor_class"]:
+                continue
+            
+            param_info = {
+                "name": param_name,
+                "type": param.annotation.__name__ if param.annotation != inspect.Parameter.empty else "any",
+            }
+            
+            if param.default != inspect.Parameter.empty:
+                param_info["default"] = param.default
+            
+            parameters.append(param_info)
+        
+        # 创建临时实例获取所需字段
+        try:
+            temp_instance = cls(name="temp")
+            required_fields = temp_instance.get_required_fields()
+        except:
+            required_fields = []
+        
+        return {
+            "class_name": cls.__name__,
+            "display_name": cls.__name__,
+            "factor_type": factor_type,
+            "module": module,
+            "description": cls.__doc__.strip() if cls.__doc__ else f"{cls.__name__} factor class",
+            "parameters": parameters,
+            "required_fields": required_fields,
+        }
+```
+
+**后端 API 路由**：
+```python
+# 文件位置：backend/app/api/routes/factors.py
+@router.get("/classes", response_model=List[Dict[str, Any]])
+async def list_factor_classes(
+    current_user: CurrentUser = None,
+) -> List[Dict[str, Any]]:
+    """
+    List all available factor classes (not instances)
+    
+    Returns:
+        List of factor class metadata including class name, type and module
+    """
+    try:
+        factor_classes = factor_service.list_factor_classes()
+        logger.info(f"Listed {len(factor_classes)} factor classes")
+        return factor_classes
+    except Exception as e:
+        logger.error(f"Error listing factor classes: {e}")
+        raise
+```
+
+**前端组件修改**：
+```tsx
+// 文件位置：frontend/src/components/Factors/FactorList.tsx
+// API 调用改为获取因子类
+const response = await request(OpenAPI, {
+  method: "GET",
+  url: "/api/v1/factors/classes",
+});
+
+// 表格扩展为 6 列
+<Table.Header>
+  <Table.Row>
+    <Table.ColumnHeader w="20%">{t("factors.className")}</Table.ColumnHeader>
+    <Table.ColumnHeader w="12%">{t("factors.factorType")}</Table.ColumnHeader>
+    <Table.ColumnHeader w="12%">{t("factors.module")}</Table.ColumnHeader>
+    <Table.ColumnHeader w="20%">{t("factors.parameters")}</Table.ColumnHeader>
+    <Table.ColumnHeader w="20%">{t("factors.requiredFields")}</Table.ColumnHeader>
+    <Table.ColumnHeader w="16%">{t("factors.description")}</Table.ColumnHeader>
+  </Table.Row>
+</Table.Header>
+
+// 参数显示格式化
+{factor.parameters && factor.parameters.length > 0
+  ? factor.parameters
+      .map((p: any) => `${p.name}: ${p.type}${p.default !== undefined && p.default !== null ? ` = ${p.default}` : ""}`)
+      .join(", ")
+  : "-"}
+```
+
+#### 返回数据示例
+
+```json
+{
+  "class_name": "MovingAverageFactor",
+  "display_name": "MovingAverageFactor",
+  "factor_type": "technical",
+  "module": "technical",
+  "description": "MovingAverageFactor factor class",
+  "parameters": [
+    {
+      "name": "period",
+      "type": "int",
+      "default": 20
+    },
+    {
+      "name": "ma_type",
+      "type": "str",
+      "default": "SMA"
+    }
+  ],
+  "required_fields": ["timestamp", "open", "high", "low", "close", "volume"]
+}
+```
+
+#### 修改文件清单
+
+**后端文件**：
+1. `backend/app/domains/factors/services.py` - 添加 `list_factor_classes()` 方法（第 110-192 行）
+2. `backend/app/api/routes/factors.py` - 添加 `/classes` API 端点（第 79-95 行）
+
+**前端文件**：
+1. `frontend/src/components/Factors/FactorList.tsx` - 重构表格显示（6 列）
+2. `frontend/src/i18n/locales/zh-CN.json` - 添加翻译键（className, module, parameters, requiredFields）
+3. `frontend/src/i18n/locales/en-US.json` - 添加英文翻译
+
+#### 技术要点
+
+**1. Python 反射机制**：
+```python
+import inspect
+
+# 获取类的 __init__ 方法签名
+sig = inspect.signature(cls.__init__)
+
+# 遍历参数
+for param_name, param in sig.parameters.items():
+    # 获取参数类型
+    param_type = param.annotation.__name__
+    # 获取默认值
+    default_value = param.default
+```
+
+**2. 自动发现模式**：
+- 使用 `inspect.getmembers()` 扫描模块中的所有类
+- 通过 `obj.__module__` 过滤出自定义的因子类
+- 避免包含基类和导入的类
+
+**3. 临时实例创建**：
+- 创建临时实例以调用实例方法 `get_required_fields()`
+- 使用 try-except 处理可能的初始化错误
+- 确保不影响实际的因子注册表
+
+**4. 前端数据格式化**：
+- 参数显示：`period: int = 20, ma_type: str = SMA`
+- 字段显示：`timestamp, open, high, low, close, volume`
+- 使用小字体（`fontSize="xs"`）节省空间
+
+#### 测试验证
+
+**功能测试**：
+- ✅ API 返回 8 个因子类（5 个技术指标 + 1 个基本面 + 2 个报告因子）
+- ✅ 每个因子类包含完整的参数定义
+- ✅ 每个因子类包含所需字段列表
+- ✅ 前端表格正确显示 6 列信息
+- ✅ 多语言切换正常工作
+
+**数据测试**：
+- ✅ `MovingAverageFactor`：参数 `period: int = 20, ma_type: str = SMA`
+- ✅ `RSIFactor`：参数 `period: int = 14`
+- ✅ `MACDFactor`：参数 `fast_period: int = 12, slow_period: int = 26, signal_period: int = 9`
+- ✅ 所需字段正确提取（如 KDJ 需要 `high, low, close`）
+
+**UI 测试**：
+- ✅ 表格布局合理，列宽分配恰当
+- ✅ 颜色区分清晰（蓝色类名、紫色类型）
+- ✅ 参数和字段显示完整且易读
+- ✅ 响应式设计良好
+
+#### 架构改进
+
+**之前的问题**：
+- ❌ 因子管理页面显示因子实例（如 `MA_5_SMA`）
+- ❌ 实例是临时的，依赖于策略配置
+- ❌ 用户无法了解可用的因子类型
+
+**现在的架构**：
+- ✅ 因子管理页面显示因子类（如 `MovingAverageFactor`）
+- ✅ 显示每个因子类的参数定义和所需字段
+- ✅ 用户可以清楚地了解每个因子的配置选项
+- ✅ 符合"类-实例"的正确架构设计
+
+**下一步**：
+- 策略详情页面将显示具体的因子实例配置
+- 例如：`MA_5_SMA` 是 `MovingAverageFactor` 的一个实例，参数为 `period=5, ma_type=SMA`
+
+#### 开发经验总结
+
+**1. 反射机制的强大**：
+- 使用 Python 的 `inspect` 模块可以自动提取类的元数据
+- 避免手动维护因子类列表
+- 新增因子类后自动出现在列表中
+
+**2. 架构设计的重要性**：
+- 正确区分"类"和"实例"的概念
+- 因子管理显示类，策略详情显示实例
+- 符合面向对象设计原则
+
+**3. 用户体验优化**：
+- 完整显示参数定义，用户知道如何配置
+- 显示所需字段，用户知道需要什么数据
+- 多语言支持，国际化友好
+
+**4. 增量开发的价值**：
+- 先实现基本功能（显示类名）
+- 再扩展详细信息（参数、字段）
+- 每一步都可验证，降低风险
+
+---

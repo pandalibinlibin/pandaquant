@@ -108,5 +108,87 @@ class FactorService:
             "is_available": factor.is_available(),
         }
 
+    def list_factor_classes(self) -> List[Dict[str, Any]]:
+        """
+        List all available factor classes (not instances)
+        Automatically discovers all Factor subclasses with detailed metadata
+        """
+        import inspect
+        from . import technical, fundamental, report
+
+        def get_class_metadata(cls, factor_type: str, module: str) -> Dict[str, Any]:
+            """Extract metadata from a factor class"""
+            # Get __init__ signature to extract parameters
+            sig = inspect.signature(cls.__init__)
+            parameters = []
+
+            for param_name, param in sig.parameters.items():
+                if param_name in ["self", "name", "factor_class"]:
+                    continue
+
+                param_info = {
+                    "name": param_name,
+                    "type": (
+                        param.annotation.__name__
+                        if param.annotation != inspect.Parameter.empty
+                        else "any"
+                    ),
+                }
+
+                # Get default value if exists
+                if param.default != inspect.Parameter.empty:
+                    param_info["default"] = param.default
+
+                parameters.append(param_info)
+
+            # Get required fields by creating a temporary instance
+            try:
+                temp_instance = cls(name="temp")
+                required_fields = temp_instance.get_required_fields()
+            except:
+                required_fields = []
+
+            # Get docstring as description
+            description = (
+                cls.__doc__.strip() if cls.__doc__ else f"{cls.__name__} factor class"
+            )
+
+            return {
+                "class_name": cls.__name__,
+                "display_name": cls.__name__,
+                "factor_type": factor_type,
+                "module": module,
+                "description": description,
+                "parameters": parameters,
+                "required_fields": required_fields,
+            }
+
+        factor_classes = []
+
+        # Scan technical factors
+        for name, obj in inspect.getmembers(technical, inspect.isclass):
+            if obj.__module__ == "app.domains.factors.technical" and name.endswith(
+                "Factor"
+            ):
+                factor_classes.append(get_class_metadata(obj, "technical", "technical"))
+
+        # Scan fundamental factors
+        for name, obj in inspect.getmembers(fundamental, inspect.isclass):
+            if obj.__module__ == "app.domains.factors.fundamental" and name.endswith(
+                "Factor"
+            ):
+                factor_classes.append(
+                    get_class_metadata(obj, "fundamental", "fundamental")
+                )
+
+        # Scan report factors
+        for name, obj in inspect.getmembers(report, inspect.isclass):
+            if obj.__module__ == "app.domains.factors.report" and name.endswith(
+                "Factor"
+            ):
+                factor_classes.append(get_class_metadata(obj, "report", "report"))
+
+        return factor_classes
+
 
 factor_service = FactorService()

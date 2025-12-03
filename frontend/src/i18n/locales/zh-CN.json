@@ -55,6 +55,10 @@
     "noData": "暂无数据"
   },
   "factors": {
+    "className": "因子类名",
+    "factorType": "因子类型",
+    "module": "所属模块",
+    "description": "说明",
     "title": "因子管理",
     "loading": "正在加载因子...",
     "noFactors": "暂无因子数据",

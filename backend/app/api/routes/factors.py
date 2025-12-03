@@ -76,6 +76,25 @@ class FactorStatusResponse(BaseModel):
     is_available: bool = Field(..., description="Whether factor is available")
 
 
+@router.get("/classes", response_model=List[Dict[str, Any]])
+async def list_factor_classes(
+    current_user: CurrentUser = None,
+) -> List[Dict[str, Any]]:
+    """
+    List all available factor classes (not instances)
+
+    Returns:
+        List of factor class metadta including class name, type and module
+    """
+    try:
+        factor_classes = factor_service.list_factor_classes()
+        logger.info(f"Listed {len(factor_classes)} factor classes")
+        return factor_classes
+    except Exception as e:
+        logger.error(f"Error listing factor classes: {e}")
+        raise
+
+
 @router.get("/", response_model=List[FactorInfo])
 async def list_factors(
     factor_type: Optional[str] = None,
