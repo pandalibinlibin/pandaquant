@@ -23,6 +23,7 @@ import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
 import { Route as LayoutDataRouteImport } from './routes/_layout/data'
 import { Route as LayoutBacktestsRouteImport } from './routes/_layout/backtests'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutStrategyNameRouteImport } from './routes/_layout/strategy.$name'
 import { Route as LayoutBacktestIdRouteImport } from './routes/_layout/backtest.$id'
 
 const SignupRoute = SignupRouteImport.update({
@@ -94,6 +95,11 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutStrategyNameRoute = LayoutStrategyNameRouteImport.update({
+  id: '/strategy/$name',
+  path: '/strategy/$name',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutBacktestIdRoute = LayoutBacktestIdRouteImport.update({
   id: '/backtest/$id',
   path: '/backtest/$id',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
   '/backtest/$id': typeof LayoutBacktestIdRoute
+  '/strategy/$name': typeof LayoutStrategyNameRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
   '/backtest/$id': typeof LayoutBacktestIdRoute
+  '/strategy/$name': typeof LayoutStrategyNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/_layout/strategies': typeof LayoutStrategiesRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/backtest/$id': typeof LayoutBacktestIdRoute
+  '/_layout/strategy/$name': typeof LayoutStrategyNameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/strategies'
     | '/'
     | '/backtest/$id'
+    | '/strategy/$name'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/strategies'
     | '/'
     | '/backtest/$id'
+    | '/strategy/$name'
   id:
     | '__root__'
     | '/_layout'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_layout/strategies'
     | '/_layout/'
     | '/_layout/backtest/$id'
+    | '/_layout/strategy/$name'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -310,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/strategy/$name': {
+      id: '/_layout/strategy/$name'
+      path: '/strategy/$name'
+      fullPath: '/strategy/$name'
+      preLoaderRoute: typeof LayoutStrategyNameRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/backtest/$id': {
       id: '/_layout/backtest/$id'
       path: '/backtest/$id'
@@ -331,6 +350,7 @@ interface LayoutRouteChildren {
   LayoutStrategiesRoute: typeof LayoutStrategiesRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutBacktestIdRoute: typeof LayoutBacktestIdRoute
+  LayoutStrategyNameRoute: typeof LayoutStrategyNameRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -344,6 +364,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutStrategiesRoute: LayoutStrategiesRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutBacktestIdRoute: LayoutBacktestIdRoute,
+  LayoutStrategyNameRoute: LayoutStrategyNameRoute,
 }
 
 const LayoutRouteWithChildren =

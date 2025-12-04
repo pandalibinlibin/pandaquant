@@ -8,7 +8,10 @@
     "save": "保存",
     "delete": "删除",
     "edit": "编辑",
-    "search": "查询"
+    "search": "查询",
+    "developing": "开发中",
+    "debug": "调试信息",
+    "configuration": "配置"
   },
   "navigation": {
     "dashboard": "仪表板",
@@ -75,7 +78,8 @@
     "lastUpdated": "最后更新",
     "active": "活跃",
     "inactive": "非活跃",
-    "factorClass": "因子类名"
+    "factorClass": "因子类名",
+    "instanceName": "实例名称"
   },
   "strategies": {
     "title": "策略管理",
@@ -85,7 +89,10 @@
     "backtest": "回测",
     "run": "运行",
     "status": "状态",
-    "performance": "性能指标"
+    "performance": "性能指标",
+    "detail": "策略详情",
+    "dataType": "数据类型",
+    "weight": "权重"
   },
   "signals": {
     "title": "信号监控",

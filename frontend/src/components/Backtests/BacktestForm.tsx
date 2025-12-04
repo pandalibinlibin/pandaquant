@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
 import { useTranslation } from "react-i18next";
+import { useSearch } from "@tanstack/react-router";
 import { catchErrorCodes, request } from "@/client/core/request";
 import { OpenAPI } from "@/client";
 
@@ -28,9 +29,10 @@ interface StrategiesResponse {
 
 const BacktestForm = () => {
   const { t } = useTranslation();
+  const search = useSearch({ from: "/_layout/backtests" });
 
   // 表单状态
-  const [strategyName, setStrategyName] = useState("");
+  const [strategyName, setStrategyName] = useState(search?.strategy || "");
   const [symbol, setSymbol] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -256,7 +258,8 @@ const BacktestForm = () => {
                     正在后台运行回测，预计需要几秒到几分钟...
                   </Text>
                   <Text fontSize="xs" color="green.500" mt={1}>
-                    已检查 {pollingCount} 次 / 最多 20 次 · 每 5 秒检查一次 · 完成后自动刷新
+                    已检查 {pollingCount} 次 / 最多 20 次 · 每 5 秒检查一次 ·
+                    完成后自动刷新
                   </Text>
                 </Box>
               </Box>

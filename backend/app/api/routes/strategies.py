@@ -179,6 +179,88 @@ def get_strategy(
     )
 
 
+class FactorInstanceInfo(BaseModel):
+    """Factor instance information in DataGroup"""
+
+    instance_name: str = Field(..., description="Factor instance name (e.g., MA_5_SMA)")
+    factor_class: str = Field(
+        ..., description="Factor class name (e.g., MovingAverageFactor)"
+    )
+    parameters: dict = Field(..., description="Factor instance parameters")
+
+
+class DataGroupInfo(BaseModel):
+    """DataGroup configuration information"""
+
+    name: str = Field(..., description="DataGroup name")
+    datagroup_class: str = Field(
+        ..., description="DataGroup class name (e.g., DailyDataGroup)"
+    )
+    data_type: str = Field(..., description="Data type (e.g., daily, minute)")
+    weight: float = Field(..., description="DataGroup weight in strategy")
+    factors: List[FactorInstanceInfo] = Field(
+        ..., description="Factor instances in this group"
+    )
+
+
+class StrategyDetailInfo(BaseModel):
+    """Detailed strategy information including DataGroup configs"""
+
+    name: str = Field(..., description="Strategy name")
+    description: Optional[str] = Field(None, description="Strategy description")
+    data_groups: List[DataGroupInfo] = Field(
+        ..., description="DataGroup configurations"
+    )
+
+
+@router.get("/{strategy_name}/detail", response_model=StrategyDetailInfo)
+def get_strategy_detail(
+    strategy_name: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get detailed strategy information including DataGroup configurations
+
+    Returns comprehensive strategy details including all DataGroup configs
+    and factor instances used in the strategy.
+    """
+    from fastapi import HTTPException
+
+    strategy_class = strategy_service.get_strategy(strategy_name)
+    if not strategy_class:
+        raise HTTPException(
+            status_code=404, detail=f"Strategy {strategy_name} not found"
+        )
+
+    data_group_configs = strategy_class.get_data_group_configs()
+
+    data_groups = []
+    for config in data_group_configs:
+        factors = [
+            FactorInstanceInfo(
+                instance_name=f["name"], factor_class=f["type"], parameters=f["params"]
+            )
+            for f in config.get("factors", [])
+        ]
+
+        data_groups.append(
+            DataGroupInfo(
+                name=config["name"],
+                datagroup_class=config["type"],
+                data_type=config.get("data_type", config["name"]),
+                weight=config.get("weight", 1.0),
+                factors=factors,
+            )
+        )
+
+    return StrategyDetailInfo(
+        name=strategy_name,
+        description=getattr(strategy_class, "__doc__", None),
+        data_groups=data_groups,
+    )
+
+
 @router.post("/{strategy_name}/backtest", response_model=BacktestResponse)
 async def run_backtest(
     strategy_name: str,

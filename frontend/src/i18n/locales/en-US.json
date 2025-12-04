@@ -8,7 +8,10 @@
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
-    "search": "Search"
+    "search": "Search",
+    "developing": "Under Development",
+    "debug": "Debug Info",
+    "configuration": "Configuration"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -75,7 +78,8 @@
     "lastUpdated": "Last Updated",
     "active": "Active",
     "inactive": "Inactive",
-    "factorClass": "Factor Class"
+    "factorClass": "Factor Class",
+    "instanceName": "Instance Name"
   },
   "strategies": {
     "title": "Strategy Management",
@@ -85,7 +89,10 @@
     "backtest": "Backtest",
     "run": "Run",
     "status": "Status",
-    "performance": "Performance Metrics"
+    "performance": "Performance Metrics",
+    "detail": "Strategy Detail",
+    "dataType": "Data Type",
+    "weight": "Weight"
   },
   "signals": {
     "title": "Signal Monitoring",

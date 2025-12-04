@@ -2968,3 +2968,366 @@ for param_name, param in sig.parameters.items():
 - 每一步都可验证，降低风险
 
 ---
+
+## 最新进展 (2025-12-03 晚)
+
+### 策略详情页面 ✅ 已完成
+
+#### 核心功能实现
+- ✅ **后端 API 创建**：新增 `/api/v1/strategies/{name}/detail` 端点
+- ✅ **完整配置返回**：包括策略描述、DataGroup 配置、因子实例列表
+- ✅ **前端路由创建**：`/strategy/$name` 独立路由（避免父子路由冲突）
+- ✅ **数据格式化显示**：策略描述框、DataGroup 表格、因子实例表格
+- ✅ **国际化支持**：所有标签使用 i18n 翻译键
+- ✅ **回测按钮集成**：策略列表的回测按钮自动填充策略名称
+
+#### 技术实现
+
+**后端数据模型**：
+```python
+# 文件位置：backend/app/api/routes/strategies.py
+
+class FactorInstanceInfo(BaseModel):
+    """Factor instance information in DataGroup"""
+    
+    instance_name: str = Field(..., description="Factor instance name (e.g., MA_5_SMA)")
+    factor_class: str = Field(..., description="Factor class name (e.g., MovingAverageFactor)")
+    parameters: dict = Field(..., description="Factor instance parameters")
+
+
+class DataGroupInfo(BaseModel):
+    """DataGroup configuration information"""
+    
+    name: str = Field(..., description="DataGroup name")
+    datagroup_class: str = Field(..., description="DataGroup class name (e.g., DailyDataGroup)")
+    data_type: str = Field(..., description="Data type (e.g., daily, minute)")
+    weight: float = Field(..., description="DataGroup weight in strategy")
+    factors: List[FactorInstanceInfo] = Field(..., description="Factor instances in this group")
+
+
+class StrategyDetailInfo(BaseModel):
+    """Detailed strategy information including DataGroup configs"""
+    
+    name: str = Field(..., description="Strategy name")
+    description: Optional[str] = Field(None, description="Strategy description")
+    data_groups: List[DataGroupInfo] = Field(..., description="DataGroup configurations")
+```
+
+**后端 API 端点**：
+```python
+# 文件位置：backend/app/api/routes/strategies.py
+
+@router.get("/{strategy_name}/detail", response_model=StrategyDetailInfo)
+def get_strategy_detail(
+    strategy_name: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get detailed strategy information including DataGroup configurations
+    """
+    from fastapi import HTTPException
+    
+    strategy_class = strategy_service.get_strategy(strategy_name)
+    if not strategy_class:
+        raise HTTPException(
+            status_code=404, detail=f"Strategy {strategy_name} not found"
+        )
+    
+    # Get DataGroup configurations from strategy class
+    data_group_configs = strategy_class.get_data_group_configs()
+    
+    # Convert to response model
+    data_groups = []
+    for config in data_group_configs:
+        factors = [
+            FactorInstanceInfo(
+                instance_name=f["name"],
+                factor_class=f["type"],
+                parameters=f["params"]
+            )
+            for f in config.get("factors", [])
+        ]
+        
+        data_groups.append(DataGroupInfo(
+            name=config["name"],
+            datagroup_class=config["type"],
+            data_type=config.get("data_type", config["name"]),
+            weight=config.get("weight", 1.0),
+            factors=factors
+        ))
+    
+    return StrategyDetailInfo(
+        name=strategy_name,
+        description=getattr(strategy_class, "__doc__", None),
+        data_groups=data_groups
+    )
+```
+
+**前端路由设计**：
+```tsx
+// 文件位置：frontend/src/routes/_layout/strategy.$name.tsx
+
+// 使用独立路由避免父子路由冲突
+// /strategies -> 策略列表
+// /strategy/$name -> 策略详情（独立路由）
+
+export const Route = createFileRoute("/_layout/strategy/$name")({
+  component: StrategyDetail,
+});
+```
+
+**前端数据获取**：
+```tsx
+// 使用 TanStack Query 获取数据
+const { data, isLoading, error } = useQuery({
+  queryKey: ["strategy-detail", name],
+  queryFn: async () => {
+    const response = await request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/strategies/${name}/detail`,
+    });
+    return response;
+  },
+});
+```
+
+**前端显示结构**：
+```tsx
+// 1. 策略标题
+<Heading size="lg" pt={12}>
+  {data.name}
+</Heading>
+
+// 2. 策略描述框
+<Box mt={4} p={4} borderWidth="1px" borderRadius="lg">
+  <Text fontWeight="bold" mb={2}>{t("strategies.description")}:</Text>
+  <Text color="gray.600">{data.description || "-"}</Text>
+</Box>
+
+// 3. DataGroup 列表（循环显示）
+{data.data_groups?.map((group: any, index: number) => (
+  <Box key={index} mt={4} p={4} borderWidth="1px" borderRadius="lg">
+    <Text fontWeight="bold" fontSize="lg" mb={3}>
+      {group.name} ({group.datagroup_class})
+    </Text>
+    
+    {/* DataGroup 基本信息 */}
+    <VStack align="stretch" gap={2} mb={4}>
+      <Text fontSize="sm">
+        <Text as="span" fontWeight="bold">{t("strategies.dataType")}:</Text>{" "}
+        {group.data_type}
+      </Text>
+      <Text fontSize="sm">
+        <Text as="span" fontWeight="bold">{t("strategies.weight")}:</Text>{" "}
+        {group.weight}
+      </Text>
+    </VStack>
+
+    {/* 因子实例表格 */}
+    <Table.Root size="sm" variant="outline">
+      <Table.Header>
+        <Table.Row>
+          <Table.ColumnHeader>{t("factors.instanceName")}</Table.ColumnHeader>
+          <Table.ColumnHeader>{t("factors.className")}</Table.ColumnHeader>
+          <Table.ColumnHeader>{t("factors.parameters")}</Table.ColumnHeader>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {group.factors?.map((factor: any, fIndex: number) => (
+          <Table.Row key={fIndex}>
+            <Table.Cell fontWeight="medium" color="blue.600">
+              {factor.instance_name}
+            </Table.Cell>
+            <Table.Cell color="purple.600">
+              {factor.factor_class}
+            </Table.Cell>
+            <Table.Cell>
+              <Text fontSize="xs" color="gray.600">
+                {JSON.stringify(factor.parameters)}
+              </Text>
+            </Table.Cell>
+          </Table.Row>
+        ))}
+      </Table.Body>
+    </Table.Root>
+  </Box>
+))}
+```
+
+**回测按钮集成**：
+```tsx
+// 文件位置：frontend/src/components/Strategies/StrategyList.tsx
+
+// 策略列表中的回测按钮
+<Link to="/backtests" search={{ strategy: strategy.name }}>
+  <Button size="sm" colorScheme="blue">
+    {t("strategies.backtest")}
+  </Button>
+</Link>
+
+// 文件位置：frontend/src/components/Backtests/BacktestForm.tsx
+
+// 回测表单读取 URL 参数并自动填充
+const search = useSearch({ from: "/_layout/backtests" });
+const [strategyName, setStrategyName] = useState(search?.strategy || "");
+```
+
+#### 返回数据示例
+
+```json
+{
+  "name": "DualMovingAverageStrategy",
+  "description": "Dual Moving Average implementation",
+  "data_groups": [
+    {
+      "name": "daily",
+      "datagroup_class": "DailyDataGroup",
+      "data_type": "daily",
+      "weight": 1.0,
+      "factors": [
+        {
+          "instance_name": "MA_5_SMA",
+          "factor_class": "MovingAverageFactor",
+          "parameters": {
+            "period": 5,
+            "ma_type": "SMA"
+          }
+        },
+        {
+          "instance_name": "MA_20_SMA",
+          "factor_class": "MovingAverageFactor",
+          "parameters": {
+            "period": 20,
+            "ma_type": "SMA"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 修改文件清单
+
+**后端文件**：
+1. `backend/app/api/routes/strategies.py` - 添加数据模型和 `/detail` API 端点
+
+**前端文件**：
+1. `frontend/src/routes/_layout/strategy.$name.tsx` - 创建策略详情路由和组件
+2. `frontend/src/components/Strategies/StrategyList.tsx` - 添加回测按钮跳转和详情链接
+3. `frontend/src/components/Backtests/BacktestForm.tsx` - 添加 URL 参数读取和自动填充
+4. `frontend/src/i18n/locales/zh-CN.json` - 添加翻译键（configuration, dataType, weight, instanceName）
+5. `frontend/src/i18n/locales/en-US.json` - 添加英文翻译
+
+#### 技术要点
+
+**1. 路由设计决策**：
+- **问题**：`/strategies` 和 `/strategies/$name` 形成父子路由，需要 `<Outlet />`
+- **解决方案**：使用独立路由 `/strategy/$name`（单数形式）
+- **优点**：
+  - 避免父子路由冲突
+  - 不需要修改 `strategies.tsx`
+  - 与 `/backtests` + `/backtest/$id` 设计一致
+
+**2. 数据模型设计**：
+- **FactorInstanceInfo**：表示因子实例（instance_name, factor_class, parameters）
+- **DataGroupInfo**：表示 DataGroup 配置（包含因子实例列表）
+- **StrategyDetailInfo**：表示策略完整详情（包含 DataGroup 列表）
+
+**3. 前端状态管理**：
+- 使用 `useQuery` 管理异步数据获取
+- 三种状态：加载中（Spinner）、错误（错误提示）、成功（显示数据）
+- 自动缓存和重新验证
+
+**4. URL 参数传递**：
+- 使用 `search` 参数传递策略名称：`/backtests?strategy=DualMovingAverageStrategy`
+- 使用 `useSearch` Hook 读取参数
+- 自动填充表单初始值
+
+**5. 国际化实现**：
+- 所有硬编码文本都使用 `t()` 函数
+- 新增翻译键：
+  - `common.configuration` - "配置" / "Configuration"
+  - `common.developing` - "开发中" / "Under Development"
+  - `common.debug` - "调试信息" / "Debug Info"
+  - `strategies.detail` - "策略详情" / "Strategy Detail"
+  - `strategies.dataType` - "数据类型" / "Data Type"
+  - `strategies.weight` - "权重" / "Weight"
+  - `factors.instanceName` - "实例名称" / "Instance Name"
+
+#### 测试验证
+
+**功能测试**：
+- ✅ 策略列表显示正常
+- ✅ 点击"查看详情"跳转到策略详情页面
+- ✅ 策略详情页面显示完整配置
+- ✅ DataGroup 和因子实例表格正确显示
+- ✅ 点击"回测"按钮跳转到回测页面并自动填充策略名称
+
+**数据测试**：
+- ✅ API 返回完整的策略配置数据
+- ✅ DataGroup 配置正确（name, datagroup_class, data_type, weight）
+- ✅ 因子实例正确（instance_name, factor_class, parameters）
+- ✅ 参数格式化显示（JSON 字符串）
+
+**UI 测试**：
+- ✅ 页面布局美观，边框和间距合理
+- ✅ 颜色区分清晰（蓝色实例名、紫色因子类）
+- ✅ 表格结构清晰，列宽分配恰当
+- ✅ 响应式设计良好
+
+**国际化测试**：
+- ✅ 中文界面显示正确
+- ✅ 英文界面显示正确
+- ✅ 语言切换正常工作
+
+#### 架构改进
+
+**之前的问题**：
+- ❌ 策略列表只显示名称和描述
+- ❌ 无法查看策略的详细配置
+- ❌ 不知道策略使用了哪些 DataGroup 和因子
+- ❌ 回测按钮不可用
+
+**现在的架构**：
+- ✅ 策略列表提供"查看详情"和"回测"按钮
+- ✅ 策略详情页面显示完整配置
+- ✅ 清晰展示 DataGroup 和因子实例的层级关系
+- ✅ 回测按钮自动填充策略名称，提升用户体验
+
+**下一步优化方向**：
+- 因子参数显示可以更友好（不使用 JSON.stringify）
+- 可以添加"编辑策略"功能
+- 可以添加策略的回测历史记录
+- 可以添加策略性能对比功能
+
+#### 开发经验总结
+
+**1. 路由设计的重要性**：
+- 独立路由比父子路由更简单
+- 命名规范：列表用复数（/strategies），详情用单数（/strategy/$name）
+- 参考现有设计（/backtests + /backtest/$id）保持一致性
+
+**2. 数据模型的层次结构**：
+- 策略 → DataGroup → 因子实例
+- 后端模型和前端显示结构保持一致
+- 使用嵌套模型清晰表达层级关系
+
+**3. 用户体验优化**：
+- 回测按钮自动填充策略名称
+- 减少用户操作步骤
+- 提供清晰的视觉反馈（加载动画、错误提示）
+
+**4. 国际化的最佳实践**：
+- 所有文本都使用翻译键
+- 翻译文件保持同步（中英文）
+- 避免任何硬编码文本
+
+**5. 增量开发的价值**：
+- 先实现基本功能（路由、API）
+- 再完善显示（表格、样式）
+- 最后优化体验（回测按钮集成）
+- 每一步都可测试和验证
+
+---

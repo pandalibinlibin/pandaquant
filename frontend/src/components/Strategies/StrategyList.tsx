@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { request } from "@/client/core/request";
 import { OpenAPI } from "@/client";
 
+import { Link } from "@tanstack/react-router";
+
 interface Strategy {
   name: string;
   description: string | null;
@@ -88,12 +90,16 @@ const StrategyList = () => {
               </Table.Cell>
               <Table.Cell w="25%">
                 <Box display="flex" gap={2} flexWrap="wrap">
-                  <Button size="sm" colorScheme="blue">
-                    {t("strategies.backtest")}
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    查看详情
-                  </Button>
+                  <Link to="/backtests" search={{ strategy: strategy.name }}>
+                    <Button size="sm" colorScheme="blue">
+                      {t("strategies.backtest")}
+                    </Button>
+                  </Link>
+                  <Link to="/strategy/$name" params={{ name: strategy.name }}>
+                    <Button size="sm" variant="outline">
+                      查看详情
+                    </Button>
+                  </Link>
                 </Box>
               </Table.Cell>
             </Table.Row>
