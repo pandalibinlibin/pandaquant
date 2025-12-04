@@ -1,239 +1,261 @@
-# Full Stack FastAPI Template
+# 🐼 PandaQuant
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+**A Modern Quantitative Trading Research & Backtesting SaaS Platform**
 
-## Technology Stack and Features
+PandaQuant is a comprehensive quantitative trading platform that enables researchers and traders to develop, backtest, and deploy algorithmic trading strategies with ease. Built with modern technologies and best practices, it provides a professional-grade infrastructure for quantitative research.
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://react.dev/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### Dashboard Login
+---
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## 🌟 Key Features
 
-### Dashboard - Admin
+### 📊 Data Management
+- **Multi-Source Data Integration**: Seamless integration with TuShare and AKShare for Chinese market data
+- **Intelligent Caching**: InfluxDB-based time-series data caching with automatic validation
+- **Data Types Support**: Daily OHLCV, minute-level data, financial statements, macro indicators, and industry data
+- **Automatic Fallback**: Smart source switching when primary data source fails
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### 🧮 Factor Engineering
+- **Factor Class System**: Extensible factor framework with automatic discovery
+- **Built-in Factors**: Technical indicators (MA, RSI, MACD, KDJ, BOLL), fundamental factors, and report-based factors
+- **Parameter Extraction**: Automatic parameter definition extraction using Python reflection
+- **Required Fields Detection**: Automatic detection of data fields required by each factor
 
-### Dashboard - Create User
+### 🎯 Strategy Development
+- **DataGroup Architecture**: Flexible multi-timeframe and multi-asset strategy design
+- **Backtrader Integration**: Professional backtesting engine with comprehensive performance metrics
+- **Strategy Templates**: Pre-built strategy templates (Dual Moving Average, RSI Mean Reversion, etc.)
+- **Factor Composition**: Combine multiple factors within DataGroups for complex strategies
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### 📈 Backtesting Engine
+- **Comprehensive Metrics**: Total return, Sharpe ratio, max drawdown, win rate, and 20+ performance indicators
+- **Asynchronous Execution**: Non-blocking backtest execution with real-time status updates
+- **Historical Records**: Complete backtest history with detailed performance analysis
+- **Visual Analytics**: Performance charts and equity curves (coming soon)
 
-### Dashboard - Items
+### 🔔 Signal Monitoring
+- **Real-time Signals**: Live trading signal generation and monitoring
+- **Signal Push**: WebSocket-based signal delivery (coming soon)
+- **Multi-Strategy Support**: Monitor signals from multiple strategies simultaneously
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### 🎨 Modern UI/UX
+- **Responsive Design**: Beautiful and intuitive interface built with Chakra UI v3
+- **Dark Mode**: Full dark mode support for comfortable viewing
+- **Internationalization**: Complete Chinese and English language support
+- **Real-time Updates**: Live data updates using TanStack Query
 
-### Dashboard - User Settings
+---
 
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## 🛠️ Technology Stack
 
-### Dashboard - Dark Mode
+### Backend
+- ⚡ **[FastAPI](https://fastapi.tiangolo.com)**: High-performance Python web framework
+- 🧰 **[SQLModel](https://sqlmodel.tiangolo.com)**: Type-safe ORM for database operations
+- 🔍 **[Pydantic](https://docs.pydantic.dev)**: Data validation and settings management
+- 💾 **[PostgreSQL](https://www.postgresql.org)**: Relational database for metadata
+- 📊 **[InfluxDB](https://www.influxdata.com)**: Time-series database for market data
+- 📉 **[Backtrader](https://www.backtrader.com)**: Professional backtesting framework
+- 🐼 **[Pandas](https://pandas.pydata.org)**: Data manipulation and analysis
+- 📚 **[TuShare](https://tushare.pro)** & **[AKShare](https://akshare.akfamily.xyz)**: Chinese market data sources
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Frontend
+- 🚀 **[React 18](https://react.dev)**: Modern UI library with hooks
+- 💎 **[TypeScript](https://www.typescriptlang.org)**: Type-safe JavaScript
+- ⚡ **[Vite](https://vitejs.dev)**: Lightning-fast build tool
+- 🎨 **[Chakra UI v3](https://chakra-ui.com)**: Beautiful component library
+- 🔄 **[TanStack Router](https://tanstack.com/router)**: Type-safe routing
+- 🔍 **[TanStack Query](https://tanstack.com/query)**: Powerful data fetching
+- 🌐 **[React i18next](https://react.i18next.com)**: Internationalization
+- 🧪 **[Playwright](https://playwright.dev)**: End-to-end testing
 
-### Interactive API Documentation
+### DevOps
+- 🐋 **[Docker](https://www.docker.com)**: Containerization
+- 🔧 **[Docker Compose](https://docs.docker.com/compose)**: Multi-container orchestration
+- 🔒 **JWT Authentication**: Secure token-based authentication
+- 📞 **[Traefik](https://traefik.io)**: Reverse proxy and load balancer
+- ✅ **[Pytest](https://pytest.org)**: Backend testing framework
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+---
 
-## How To Use It
+## 🚀 Quick Start
 
-You can **just fork or clone** this repository and use it as is.
+### Prerequisites
+- Docker & Docker Compose
+- Python 3.11+ (for local development)
+- Node.js 18+ (for frontend development)
 
-✨ It just works. ✨
+### Installation
 
-### How to Use a Private Repository
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/pandaquant.git
+   cd pandaquant
+   ```
 
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
+2. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-But you can do the following:
+3. **Start with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
 
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+4. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
 
+### Development Setup
+
+**Backend:**
 ```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-- Enter into the new directory:
-
+**Frontend:**
 ```bash
-cd my-full-stack
+cd frontend
+npm install
+npm run dev
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+---
 
-```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
+## 📖 Architecture
+
+### System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend (React)                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │   Data   │  │ Factors  │  │Strategies│  │Backtests │   │
+│  │Management│  │Management│  │Management│  │ Analysis │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                    ┌───────▼────────┐
+                    │   FastAPI      │
+                    │   REST API     │
+                    └───────┬────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+┌───────▼────────┐  ┌──────▼──────┐  ┌────────▼────────┐
+│   PostgreSQL   │  │  InfluxDB   │  │   Backtrader    │
+│   (Metadata)   │  │(Time-Series)│  │(Backtest Engine)│
+└────────────────┘  └─────────────┘  └─────────────────┘
+        │                   │
+        │           ┌───────▼────────┐
+        │           │  Data Sources  │
+        │           │ TuShare/AKShare│
+        │           └────────────────┘
+        │
+┌───────▼────────┐
+│  Signal Push   │
+│   (WebSocket)  │
+└────────────────┘
 ```
 
-- Add this repo as another "remote" to allow you to get updates later:
+### DataGroup Architecture
 
-```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
+PandaQuant uses a unique **DataGroup** architecture for strategy development:
+
+```python
+Strategy
+  └── DataGroup (e.g., "daily")
+       ├── Data Type: daily OHLCV
+       ├── Weight: 1.0
+       └── Factors
+            ├── MA_5_SMA (MovingAverageFactor, period=5)
+            ├── MA_20_SMA (MovingAverageFactor, period=20)
+            └── RSI_14 (RSIFactor, period=14)
 ```
 
-- Push the code to your new repository:
+This architecture allows:
+- Multiple timeframes in one strategy
+- Clear factor organization
+- Easy strategy composition
+- Flexible weight allocation
 
-```bash
-git push -u origin master
-```
+---
 
-### Update From the Original Template
+## 📚 Documentation
 
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
+Detailed documentation is available in Chinese:
+- **[Development Documentation](QUANTITATIVE_SYSTEM_DEVELOPMENT.md)**: Complete technical implementation guide
+- **API Documentation**: Available at `/docs` when running the backend
 
-- Make sure you added the original repository as a remote, you can check it with:
+---
 
-```bash
-git remote -v
+## 🗺️ Roadmap
 
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
+### ✅ Completed
+- [x] Data management with multi-source integration
+- [x] Factor class system with automatic discovery
+- [x] Strategy management with DataGroup architecture
+- [x] Backtest engine with comprehensive metrics
+- [x] Strategy detail page with configuration display
+- [x] Internationalization (Chinese/English)
 
-- Pull the latest changes without merging:
+### 🚧 In Progress
+- [ ] Signal monitoring dashboard
+- [ ] Real-time signal push (WebSocket)
+- [ ] Performance charts and visualizations
 
-```bash
-git pull --no-commit upstream master
-```
+### 📋 Planned
+- [ ] Paper trading simulation
+- [ ] Live trading integration
+- [ ] Portfolio management
+- [ ] Risk management tools
+- [ ] Strategy optimization
+- [ ] Machine learning factor discovery
+- [ ] Multi-user support with permissions
+- [ ] Cloud deployment templates
 
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
+---
 
-- If there are conflicts, solve them in your editor.
+## 🤝 Contributing
 
-- Once you are done, commit the changes:
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-```bash
-git merge --continue
-```
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Configure
+---
 
-You can then update configs in the `.env` files to customize your configurations.
+## 📄 License
 
-Before deploying it, make sure you change at least the values for:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
+---
 
-You can (and should) pass these as environment variables from secrets.
+## 🙏 Acknowledgments
 
-Read the [deployment.md](./deployment.md) docs for more details.
+- Built on top of [FastAPI Full Stack Template](https://github.com/fastapi/full-stack-fastapi-template)
+- Data provided by [TuShare](https://tushare.pro) and [AKShare](https://akshare.akfamily.xyz)
+- Backtesting powered by [Backtrader](https://www.backtrader.com)
 
-### Generate Secret Keys
+---
 
-Some environment variables in the `.env` file have a default value of `changethis`.
+## 📧 Contact
 
-You have to change them with a secret key, to generate secret keys you can run the following command:
+For questions and support, please open an issue on GitHub.
 
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
+---
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
-
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
-
-```bash
-pip install copier
-```
-
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
-
-```bash
-pipx install copier
-```
-
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
-
-### Generate a Project With Copier
-
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
-
-Go to the directory that will be the parent of your project, and run the command with your project's name:
-
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
-
-## License
-
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+**⚠️ Disclaimer**: This software is for research and educational purposes only. Use at your own risk. Past performance does not guarantee future results.
