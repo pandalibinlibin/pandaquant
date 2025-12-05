@@ -197,7 +197,7 @@ class Signal(SQLModel, table=True):
     push_error: Optional[str] = Field(default=None, max_length=500)
     sent_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: UUID = Field(foreign_key="user.id")
+    created_by: Optional[UUID] = Field(default=None, foreign_key="user.id")
     # 信号生成时间（精确时间戳）
     signal_time: datetime = Field(
         default_factory=datetime.utcnow,
@@ -227,8 +227,8 @@ class BacktestResult(SQLModel, table=True):
     start_date: str = Field(max_length=20)
     end_date: str = Field(max_length=20)
     initial_capital: float
-    final_value: float
-    total_return: float
+    final_value: Optional[float] = None
+    total_return: Optional[float] = None
     max_drawdown: Optional[float] = None
     sharpe_ratio: Optional[float] = None
     total_trades: Optional[int] = None

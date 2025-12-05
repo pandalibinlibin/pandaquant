@@ -188,6 +188,9 @@ class StrategyService:
         strategy_class._run_start_date = start_date
         strategy_class._run_end_date = end_date
 
+        strategy_class._db_session = session
+        strategy_class._backtest_id = backtest_id
+
         data_group_configs = strategy_class.get_data_group_configs()
 
         feeds = []
@@ -215,7 +218,7 @@ class StrategyService:
         # Determine timeframe from the first feed for analyzer configuration
         # This ensures analyzers use the correct timeframe (Days, Minutes, etc.)
         primary_feed = feeds[0]
-        analyzer_timeframe = getattr(primary_feed, '_timeframe', bt.TimeFrame.Days)
+        analyzer_timeframe = getattr(primary_feed, "_timeframe", bt.TimeFrame.Days)
         logger.info(f"Using timeframe {analyzer_timeframe} for analyzers")
 
         cerebro = bt.Cerebro()
@@ -282,6 +285,23 @@ class StrategyService:
             comminfo.p.margin = margin
 
         cerebro.broker.addcommissioninfo(comminfo)
+
+        # Create BacktestResult record BEFORE running backtest
+        # This allows signals to reference the backtest_id via foreign key
+        backtest_result = BacktestResult(
+            id=UUID(backtest_id),
+            strategy_name=strategy_name,
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
+            initial_capital=initial_capital,
+            final_value=initial_capital,  # Will be updated after backtest
+            status="running",
+            created_by=created_by,
+        )
+        session.add(backtest_result)
+        session.commit()
+        logger.info(f"Created backtest record with ID: {backtest_id}, status: running")
 
         try:
             loop = asyncio.get_running_loop()
@@ -431,9 +451,11 @@ class StrategyService:
                 calmar_values = [
                     v
                     for v in calmar_data.values()
-                    if v is not None and not (isinstance(v, float) and v != v) and v != 0.0
+                    if v is not None
+                    and not (isinstance(v, float) and v != v)
+                    and v != 0.0
                 ]  # Filter out None, NaN, and 0.0
-                
+
                 # Try to use analyzer value if valid
                 calmar_from_analyzer = None
                 if calmar_values:
@@ -449,21 +471,27 @@ class StrategyService:
                             f"Calmar ratio from analyzer too small ({calmar_from_analyzer}), will calculate manually"
                         )
                         calmar_from_analyzer = None  # Mark as invalid
-                
+
                 # If analyzer failed or returned invalid value, calculate manually
                 if calmar_from_analyzer is None:
                     # Manually calculate Calmar ratio if analyzer fails
                     # Calmar = Annual Return / Max Drawdown
                     avg_annual_return = performance.get("avg_annual_return")
                     max_drawdown = performance.get("max_drawdown")
-                    if avg_annual_return is not None and max_drawdown is not None and max_drawdown != 0:
+                    if (
+                        avg_annual_return is not None
+                        and max_drawdown is not None
+                        and max_drawdown != 0
+                    ):
                         performance["calmar_ratio"] = avg_annual_return / max_drawdown
                         logger.info(
                             f"Calmar ratio calculated manually: {performance['calmar_ratio']} "
                             f"(annual_return={avg_annual_return}, max_dd={max_drawdown})"
                         )
                     else:
-                        logger.warning("Cannot calculate Calmar ratio - missing annual return or max drawdown")
+                        logger.warning(
+                            "Cannot calculate Calmar ratio - missing annual return or max drawdown"
+                        )
                         performance["calmar_ratio"] = None
             else:
                 logger.warning("Calmar analyzer not found or is None")
@@ -511,37 +539,27 @@ class StrategyService:
                 final_value - initial_capital
             ) / initial_capital
 
-            # Save backtest result to database
-            backtest_result = BacktestResult(
-                id=UUID(backtest_id),
-                strategy_name=strategy_name,
-                symbol=symbol,
-                start_date=start_date,
-                end_date=end_date,
-                initial_capital=initial_capital,
-                final_value=final_value,
-                total_return=performance.get("total_return", 0.0),
-                total_return_pct=performance.get("total_return_pct", 0.0),
-                sharpe_ratio=performance.get("sharpe_ratio"),
-                max_drawdown=performance.get("max_drawdown"),
-                total_trades=performance.get("total_trades"),
-                winning_trades=performance.get("winning_trades"),
-                losing_trades=performance.get("losing_trades"),
-                win_rate=performance.get("win_rate"),
-                avg_win=performance.get("avg_win"),
-                avg_loss=performance.get("avg_loss"),
-                avg_annual_return=performance.get("avg_annual_return"),
-                vwr=performance.get("vwr"),
-                calmar_ratio=performance.get("calmar_ratio"),
-                sqn=performance.get("sqn"),
-                chart_path=chart_path,
-                status="completed",
-                created_by=created_by,
-            )
-            session.add(backtest_result)
+            # Update BacktestResult record with final results
+            backtest_result.final_value = final_value
+            backtest_result.total_return = performance.get("total_return", 0.0)
+            backtest_result.total_return_pct = performance.get("total_return_pct", 0.0)
+            backtest_result.sharpe_ratio = performance.get("sharpe_ratio")
+            backtest_result.max_drawdown = performance.get("max_drawdown")
+            backtest_result.total_trades = performance.get("total_trades")
+            backtest_result.winning_trades = performance.get("winning_trades")
+            backtest_result.losing_trades = performance.get("losing_trades")
+            backtest_result.win_rate = performance.get("win_rate")
+            backtest_result.avg_win = performance.get("avg_win")
+            backtest_result.avg_loss = performance.get("avg_loss")
+            backtest_result.avg_annual_return = performance.get("avg_annual_return")
+            backtest_result.vwr = performance.get("vwr")
+            backtest_result.calmar_ratio = performance.get("calmar_ratio")
+            backtest_result.sqn = performance.get("sqn")
+            backtest_result.chart_path = chart_path
+            backtest_result.status = "completed"
             session.commit()
             session.refresh(backtest_result)
-            logger.info(f"Backtest result saved to database: {backtest_id}")
+            logger.info(f"Backtest result updated to completed: {backtest_id}")
 
             return {
                 "backtest_id": backtest_id,

@@ -35,10 +35,15 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - **Comprehensive Metrics**: Total return, Sharpe ratio, max drawdown, win rate, and 20+ performance indicators
 - **Asynchronous Execution**: Non-blocking backtest execution with real-time status updates
 - **Historical Records**: Complete backtest history with detailed performance analysis
+- **Signal Persistence**: Automatic signal saving to database with backtest association
 - **Visual Analytics**: Performance charts and equity curves (coming soon)
 
-### 🔔 Signal Monitoring
-- **Real-time Signals**: Live trading signal generation and monitoring
+### 🔔 Signal Management
+- **Signal Persistence**: All trading signals automatically saved to database during backtesting
+- **Signal Query API**: RESTful API to retrieve signals by backtest ID and strategy name
+- **Signal History**: Complete audit trail of all generated signals with timestamps and prices
+- **Backtest Association**: Signals linked to backtest results via foreign key relationships
+- **Real-time Signals**: Live trading signal generation and monitoring (coming soon)
 - **Signal Push**: WebSocket-based signal delivery (coming soon)
 - **Multi-Strategy Support**: Monitor signals from multiple strategies simultaneously
 
@@ -207,10 +212,12 @@ Detailed documentation is available in Chinese:
 - [x] Strategy management with DataGroup architecture
 - [x] Backtest engine with comprehensive metrics
 - [x] Strategy detail page with configuration display
+- [x] Signal persistence and query API
+- [x] Backtest-signal association with foreign keys
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
-- [ ] Signal monitoring dashboard
+- [ ] Signal monitoring dashboard (frontend)
 - [ ] Real-time signal push (WebSocket)
 - [ ] Performance charts and visualizations
 

@@ -3,6 +3,7 @@ Strategy management API routes
 """
 
 from fastapi import APIRouter
+from app.models import BacktestResult
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
 
@@ -89,6 +90,26 @@ class BacktestResponse(BaseModel):
     performance: PerformanceMetrics
     chart_path: Optional[str] = None
     status: str
+
+
+class SignalInfo(BaseModel):
+    """Signal information response model"""
+
+    id: str = Field(..., description="Signal ID")
+    signal_time: str = Field(..., description="Signal generation time (ISO 8601)")
+    symbol: str = Field(..., description="Trading symbol")
+    status: str = Field(..., description="Signal type (buy/sell/hold)")
+    signal_strength: float = Field(..., description="Signal confidence (0-1)")
+    price: Optional[float] = Field(None, description="Signal price")
+    quantity: Optional[int] = Field(None, description="Suggested quantity")
+    message: Optional[str] = Field(None, description="Signal message")
+
+
+class SignalListResponse(BaseModel):
+    """Signal list response model"""
+
+    data: List[SignalInfo] = Field(..., description="List of signals")
+    total: int = Field(..., description="Total number of signals")
 
 
 @router.get("/", response_model=StrategiesList)
@@ -593,6 +614,63 @@ def get_backtest_history(
         size=size,
         total_pages=total_pages,
     )
+
+
+@router.get(
+    "/{strategy_name}/backtests/{backtest_id}/signals",
+    response_model=SignalListResponse,
+)
+def get_backtest_signals(
+    strategy_name: str,
+    backtest_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> SignalListResponse:
+    """
+    Get all signals for a specific backtest
+
+     Args:
+        strategy_name: Strategy name
+        backtest_id: Backtest ID
+        session: Database session
+        current_user: Current authenticated user
+
+    Returns:
+        List of signals for the backtest
+
+    Raises:
+        HTTPException: If backtest not found
+    """
+    from uuid import UUID
+    from app.models import Signal
+    from sqlmodel import select
+
+    backtest = session.get(BacktestResult, UUID(backtest_id))
+    if not backtest:
+        raise HTTPException(status_code=404, detail=f"Backtest {backtest_id} not found")
+
+    statement = (
+        select(Signal)
+        .where(Signal.backtest_id == UUID(backtest_id))
+        .order_by(Signal.signal_time)
+    )
+    signals = session.exec(statement).all()
+
+    signal_list = []
+    for signal in signals:
+        signal_info = SignalInfo(
+            id=str(signal.id),
+            signal_time=signal.signal_time.isoformat() + "Z",
+            symbol=signal.symbol,
+            status=signal.status,
+            signal_strength=signal.signal_strength,
+            price=signal.price,
+            quantity=signal.quantity,
+            message=signal.message,
+        )
+        signal_list.append(signal_info)
+
+    return SignalListResponse(data=signal_list, total=len(signal_list))
 
 
 @router.delete("/{strategy_name}/backtests/{backtest_id}")

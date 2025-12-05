@@ -49,20 +49,22 @@ class DataService:
                 if not cached_data.empty:
                     # Check if cached data covers the requested time range
                     from datetime import datetime
-                    
-                    cached_start = cached_data['timestamp'].min()
-                    cached_end = cached_data['timestamp'].max()
+
+                    cached_start = cached_data["timestamp"].min()
+                    cached_end = cached_data["timestamp"].max()
                     requested_start = pd.to_datetime(start_date)
                     requested_end = pd.to_datetime(end_date)
-                    
+
                     # Convert to timezone-naive for comparison if needed
                     if cached_start.tzinfo is not None:
                         cached_start = cached_start.tz_localize(None)
                     if cached_end.tzinfo is not None:
                         cached_end = cached_end.tz_localize(None)
-                    
+
                     # Check if cache covers the full requested range
-                    cache_covers_range = (cached_start <= requested_start and cached_end >= requested_end)
+                    cache_covers_range = (
+                        cached_start <= requested_start and cached_end >= requested_end
+                    )
                     
                     # Calculate expected data points (rough estimate: trading days ~= 250/year)
                     expected_days = (requested_end - requested_start).days
@@ -99,6 +101,13 @@ class DataService:
             )
 
             if data.empty:
+                # If fetch failed but we have cached data, use it as fallback
+                if use_cache and not cached_data.empty:
+                    logger.warning(
+                        f"Failed to fetch fresh data for {symbol}, using cached data as fallback "
+                        f"({len(cached_data)} points from {cached_data['timestamp'].min().date()} to {cached_data['timestamp'].max().date()})"
+                    )
+                    return cached_data
                 return pd.DataFrame()
 
             if use_cache:

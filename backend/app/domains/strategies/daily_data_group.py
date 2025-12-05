@@ -38,6 +38,7 @@ class DailyDataGroup(DataGroup):
                 symbol=symbol,
                 start_date=start_date,
                 end_date=end_date,
+                use_cache=True,
             )
 
             if data.empty:

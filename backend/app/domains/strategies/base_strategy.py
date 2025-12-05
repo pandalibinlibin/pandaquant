@@ -39,6 +39,10 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
 
         self._data_index_to_group: Dict[int, str] = {}
 
+        self._db_session = getattr(self.__class__, "_db_session", None)
+        self._backtest_id = getattr(self.__class__, "_backtest_id", None)
+        self._strategy_name = self.__class__.__name__
+
     @classmethod
     @abstractmethod
     def get_data_group_configs(cls) -> List[Dict[str, Any]]:
@@ -61,6 +65,49 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
                 return data._data_group_name
 
         return self._data_index_to_group.get(data_index)
+
+    def _save_signal_to_db(self, signal: Dict[str, Any], current_date: pd.Timestamp):
+        """Save signal to database if backtest context is available"""
+        if self._db_session is None or self._backtest_id is None:
+            return
+
+        try:
+            from app.models import Signal
+            from uuid import UUID
+
+            # Convert pandas Timestamp to Python datetime
+            if hasattr(current_date, "to_pydatetime"):
+                signal_datetime = current_date.to_pydatetime()
+            else:
+                signal_datetime = current_date
+
+            # Create signal record
+            signal_record = Signal(
+                strategy_name=self._strategy_name,
+                symbol=signal.get("symbol", self.symbol),
+                signal_time=signal_datetime,
+                status=signal.get("action", "unknown"),
+                signal_strength=signal.get("confidence", 0.0),
+                price=signal.get("price"),
+                quantity=signal.get("quantity"),
+                message=signal.get("reason", ""),
+                backtest_id=(
+                    UUID(self._backtest_id)
+                    if isinstance(self._backtest_id, str)
+                    else self._backtest_id
+                ),
+            )
+
+            self._db_session.add(signal_record)
+            self._db_session.commit()
+            logger.debug(
+                f"Saved signal: {signal.get('action')} {signal.get('symbol')} at {signal_datetime}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to save signal to database: {e}")
+            if self._db_session:
+                self._db_session.rollback()
 
     def next(self):
         """

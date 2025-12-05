@@ -147,6 +147,9 @@ class DualMovingAverageStrategy(BaseStrategy):
                             f"Buy order: {size} shares of {symbol} at {price:.2f} on {current_date}"
                         )
 
+                        # Save signal to database
+                        self._save_signal_to_db(signal, current_date)
+
                         # Skip signal push in backtest mode - signals are for live/paper trading only
                         # asyncio.create_task() cannot be used in executor thread pool
                         # TODO: Implement signal push for live/paper trading modes
@@ -157,6 +160,9 @@ class DualMovingAverageStrategy(BaseStrategy):
                     logger.info(
                         f"Sell order: close position of {symbol} at {price:.2f} on {current_date}"
                     )
+
+                    # Save signal to database
+                    self._save_signal_to_db(signal, current_date)
 
                     # Skip signal push in backtest mode - signals are for live/paper trading only
                     # asyncio.create_task() cannot be used in executor thread pool
