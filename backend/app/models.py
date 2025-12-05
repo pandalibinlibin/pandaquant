@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
 from sqlalchemy import Index
+import sqlalchemy as sa
 
 
 # Shared properties
@@ -197,6 +198,20 @@ class Signal(SQLModel, table=True):
     sent_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     created_by: UUID = Field(foreign_key="user.id")
+    # 信号生成时间（精确时间戳）
+    signal_time: datetime = Field(
+        default_factory=datetime.utcnow,
+        sa_column_kwargs={"server_default": sa.func.now()},
+        description="Signal generation time with high precision",
+    )
+
+    # 关联回测记录
+    backtest_id: Optional[UUID] = Field(
+        default=None,
+        foreign_key="backtest_result.id",
+        index=True,
+        description="Associated backtest ID (null for live/paper trading signals)",
+    )
 
     creator: Optional["User"] = Relationship(back_populates="signals")
 
