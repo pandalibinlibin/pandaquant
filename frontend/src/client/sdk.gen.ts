@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { BacktestsListAllBacktestsData, BacktestsListAllBacktestsResponse, BacktestsCompareBacktestsData, BacktestsCompareBacktestsResponse, BacktestsGetBacktestByIdData, BacktestsGetBacktestByIdResponse, DataFetchStockDataData, DataFetchStockDataResponse, DataFetchMacroDataData, DataFetchMacroDataResponse, DataFetchIndustryConceptDataData, DataFetchIndustryConceptDataResponse, FactorsListFactorsData, FactorsListFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUnregisterFactorData, FactorsUnregisterFactorResponse, FactorsCalculateFactorData, FactorsCalculateFactorResponse, FactorsGetFactorStatusData, FactorsGetFactorStatusResponse, FactorsRegisterFactorData, FactorsRegisterFactorResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignalsListSignalsData, SignalsListSignalsResponse, SignalsCreateSignalData, SignalsCreateSignalResponse, SignalsGetSignalData, SignalsGetSignalResponse, StrategiesListStrategiesResponse, StrategiesGetStrategyData, StrategiesGetStrategyResponse, StrategiesRunBacktestData, StrategiesRunBacktestResponse, StrategiesGetBacktestResultData, StrategiesGetBacktestResultResponse, StrategiesDeleteBacktestResultData, StrategiesDeleteBacktestResultResponse, StrategiesGetBacktestHistoryData, StrategiesGetBacktestHistoryResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BacktestsListAllBacktestsData, BacktestsListAllBacktestsResponse, BacktestsCompareBacktestsData, BacktestsCompareBacktestsResponse, BacktestsGetBacktestByIdData, BacktestsGetBacktestByIdResponse, DataFetchStockDataData, DataFetchStockDataResponse, DataFetchMacroDataData, DataFetchMacroDataResponse, DataFetchIndustryConceptDataData, DataFetchIndustryConceptDataResponse, FactorsListFactorClassesResponse, FactorsListFactorsData, FactorsListFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUnregisterFactorData, FactorsUnregisterFactorResponse, FactorsCalculateFactorData, FactorsCalculateFactorResponse, FactorsGetFactorStatusData, FactorsGetFactorStatusResponse, FactorsRegisterFactorData, FactorsRegisterFactorResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignalsListSignalsData, SignalsListSignalsResponse, SignalsCreateSignalData, SignalsCreateSignalResponse, SignalsGetSignalData, SignalsGetSignalResponse, StrategiesListStrategiesResponse, StrategiesGetStrategyData, StrategiesGetStrategyResponse, StrategiesGetStrategyDetailData, StrategiesGetStrategyDetailResponse, StrategiesRunBacktestData, StrategiesRunBacktestResponse, StrategiesGetBacktestResultData, StrategiesGetBacktestResultResponse, StrategiesDeleteBacktestResultData, StrategiesDeleteBacktestResultResponse, StrategiesGetBacktestHistoryData, StrategiesGetBacktestHistoryResponse, StrategiesGetBacktestSignalsData, StrategiesGetBacktestSignalsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class BacktestsService {
     /**
@@ -271,6 +271,22 @@ export class DataService {
 }
 
 export class FactorsService {
+    /**
+     * List Factor Classes
+     * List all available factor classes (not instances)
+     *
+     * Returns:
+     * List of factor class metadta including class name, type and module
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static listFactorClasses(): CancelablePromise<FactorsListFactorClassesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/classes'
+        });
+    }
+    
     /**
      * List Factors
      * List all available factors with optional type filtering
@@ -697,7 +713,7 @@ export class SignalsService {
      * @param data.symbol
      * @param data.page
      * @param data.size
-     * @returns SignalListResponse Successful Response
+     * @returns app__api__routes__signals__SignalListResponse Successful Response
      * @throws ApiError
      */
     public static listSignals(data: SignalsListSignalsData = {}): CancelablePromise<SignalsListSignalsResponse> {
@@ -730,7 +746,7 @@ export class SignalsService {
      * HTTPException: If signal creation fails
      * @param data The data for the request.
      * @param data.requestBody
-     * @returns SignalInfo Successful Response
+     * @returns app__api__routes__signals__SignalInfo Successful Response
      * @throws ApiError
      */
     public static createSignal(data: SignalsCreateSignalData): CancelablePromise<SignalsCreateSignalResponse> {
@@ -760,7 +776,7 @@ export class SignalsService {
      * HTTPException: If signal not found
      * @param data The data for the request.
      * @param data.signalId
-     * @returns SignalInfo Successful Response
+     * @returns app__api__routes__signals__SignalInfo Successful Response
      * @throws ApiError
      */
     public static getSignal(data: SignalsGetSignalData): CancelablePromise<SignalsGetSignalResponse> {
@@ -847,6 +863,30 @@ export class StrategiesService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/strategies/{strategy_name}',
+            path: {
+                strategy_name: data.strategyName
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Strategy Detail
+     * Get detailed strategy information including DataGroup configurations
+     *
+     * Returns comprehensive strategy details including all DataGroup configs
+     * and factor instances used in the strategy.
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @returns StrategyDetailInfo Successful Response
+     * @throws ApiError
+     */
+    public static getStrategyDetail(data: StrategiesGetStrategyDetailData): CancelablePromise<StrategiesGetStrategyDetailResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}/detail',
             path: {
                 strategy_name: data.strategyName
             },
@@ -1083,6 +1123,41 @@ export class StrategiesService {
             query: {
                 page: data.page,
                 size: data.size
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Backtest Signals
+     * Get all signals for a specific backtest
+     *
+     * Args:
+     * strategy_name: Strategy name
+     * backtest_id: Backtest ID
+     * session: Database session
+     * current_user: Current authenticated user
+     *
+     * Returns:
+     * List of signals for the backtest
+     *
+     * Raises:
+     * HTTPException: If backtest not found
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.backtestId
+     * @returns app__api__routes__strategies__SignalListResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestSignals(data: StrategiesGetBacktestSignalsData): CancelablePromise<StrategiesGetBacktestSignalsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}/backtests/{backtest_id}/signals',
+            path: {
+                strategy_name: data.strategyName,
+                backtest_id: data.backtestId
             },
             errors: {
                 422: 'Validation Error'

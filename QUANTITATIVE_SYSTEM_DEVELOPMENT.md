@@ -3478,3 +3478,195 @@ const [strategyName, setStrategyName] = useState(search?.strategy || "");
 - 每一步都可测试和验证
 
 ---
+
+### 12. 信号监控前端集成 ✅
+
+**完成时间**：2025-12-06
+
+#### 实现内容
+
+**1. 回测详情页面集成信号列表**
+- 在回测详情页面底部添加"交易信号"区块
+- 使用 `StrategiesService.getBacktestSignals()` API 获取信号数据
+- 条件查询：只有当策略名存在时才执行查询
+- 条件渲染：只有当有信号数据时才显示区块
+
+**2. 信号列表展示**
+- 表格显示 6 列数据：
+  - 时间：格式化为 `月-日 时:分`
+  - 交易标的：蓝色高亮显示
+  - 操作类型：买入（红色）/ 卖出（绿色）
+  - 价格：保留 2 位小数
+  - 信号强度：保留 3 位小数（0-1 范围的值）
+  - 描述：显示信号原因（如金叉、死叉）
+
+**3. 多语言支持**
+- 添加中文翻译（zh-CN.json）
+- 添加英文翻译（en-US.json）
+- 翻译键：
+  - `backtests.signals_title`: "交易信号" / "Trading Signals"
+  - `signals.time`: "时间" / "Time"
+  - `signals.price`: "价格" / "Price"
+  - `signals.strength`: "信号强度" / "Signal Strength"
+  - `signals.message`: "描述" / "Message"
+
+**4. OpenAPI 客户端更新**
+- 重新生成前端 OpenAPI 客户端
+- 包含最新的信号查询端点
+- 使用 `npm run generate-client` 命令生成
+
+**5. 架构优化**
+- 移除独立的信号监控页面（`/signals` 路由）
+- 移除 `SignalList.tsx` 组件
+- 从导航栏移除"信号监控"菜单项
+- 原因：信号与回测结果绑定，在回测详情页面查看更合理
+
+#### 技术实现
+
+**1. 数据查询（React Query）**
+```typescript
+const {
+  data: signalsData,
+  isLoading: signalsLoading,
+  error: signalsError,
+} = useQuery({
+  queryKey: ["signals", data?.strategy_name, id],
+  enabled: !!data?.strategy_name,
+  queryFn: async () => {
+    if (!data?.strategy_name) return { data: [], total: 0 };
+    const response = await StrategiesService.getBacktestSignals({
+      strategyName: data.strategy_name,
+      backtestId: id,
+    });
+    return response;
+  },
+});
+```
+
+**2. 条件渲染**
+```typescript
+{signalsData?.data && signalsData.data.length > 0 && (
+  <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
+    {/* 信号列表表格 */}
+  </Box>
+)}
+```
+
+**3. 数据格式化**
+- 时间：`new Date(signal.signal_time).toLocaleString("zh-CN", {...})`
+- 价格：`signal.price.toFixed(2)`
+- 信号强度：`signal.signal_strength.toFixed(3)`
+
+**4. 颜色区分**
+```typescript
+<Text color={signal.status === "buy" ? "red.500" : "green.500"}>
+  {signal.status === "buy" ? "买入" : "卖出"}
+</Text>
+```
+
+#### 测试结果
+
+**1. 功能测试**
+- ✅ 信号列表正确显示 19 条记录
+- ✅ 买入信号显示为红色
+- ✅ 卖出信号显示为绿色
+- ✅ 股票代码蓝色高亮
+- ✅ 时间、价格、信号强度格式正确
+
+**2. 数据验证**
+- ✅ 信号强度数值正确（0.000-0.009）
+- ✅ 信号强度计算公式：`ma_distance / long_ma_current`
+- ✅ 交叉时刻均线距离小，信号强度低是正常现象
+
+**3. 语言切换测试**
+- ✅ 中文界面显示正确
+- ✅ 英文界面显示正确
+- ✅ 表头翻译完整
+
+**4. API 测试**
+- ✅ 端点：`GET /api/v1/strategies/{strategy_name}/backtests/{backtest_id}/signals`
+- ✅ 响应状态：200 OK
+- ✅ 数据结构：`{ data: Signal[], total: number }`
+
+#### 文件修改清单
+
+**新增/修改**：
+- `frontend/src/routes/_layout/backtest.$id.tsx` - 添加信号列表区块
+- `frontend/src/i18n/locales/zh-CN.json` - 添加中文翻译
+- `frontend/src/i18n/locales/en-US.json` - 添加英文翻译
+- `frontend/src/client/sdk.gen.ts` - 重新生成 OpenAPI 客户端
+- `frontend/src/client/types.gen.ts` - 重新生成类型定义
+
+**删除**：
+- `frontend/src/components/Signals/SignalList.tsx` - 删除独立信号组件
+- `frontend/src/routes/_layout/signals.tsx` - 删除信号路由
+- `frontend/src/components/Common/SidebarItems.tsx` - 移除信号菜单项
+
+#### 设计决策
+
+**1. 为什么集成到回测详情页面？**
+- 信号是在回测过程中产生的
+- 信号与特定回测结果绑定
+- 在回测详情页面查看信号更符合用户心智模型
+- 避免独立页面的导航复杂性
+
+**2. 为什么移除独立的信号监控页面？**
+- 当前架构中，信号只在回测时保存
+- 没有实时信号生成和推送功能
+- 独立页面缺乏实际使用场景
+- 简化导航结构，提升用户体验
+
+**3. 信号强度为什么这么小？**
+- 双均线策略在交叉点时均线距离很小
+- 信号强度 = 均线距离 / 长期均线值
+- 例如：`0.02 / 9.54 = 0.002`
+- 这是正常现象，反映了策略的真实特性
+
+#### 后续优化方向
+
+**1. 实时信号监控**（未来功能）
+- 实现实时信号生成和推送
+- 添加 WebSocket 实时更新
+- 恢复独立的信号监控页面
+- 支持多策略、多标的的信号聚合查看
+
+**2. 信号分析功能**
+- 信号准确率统计
+- 信号收益分析
+- 信号时间分布图
+- 信号强度分布图
+
+**3. 信号过滤和搜索**
+- 按时间范围过滤
+- 按操作类型过滤（买入/卖出）
+- 按信号强度过滤
+- 按股票代码搜索
+
+#### 开发经验总结
+
+**1. 功能集成的合理性**：
+- 优先考虑用户使用场景
+- 避免为了"完整性"而添加无用功能
+- 信号与回测绑定，集成展示更合理
+
+**2. OpenAPI 客户端生成**：
+- 后端 API 变更后及时重新生成客户端
+- 使用 `npm run generate-client` 命令
+- 确保后端服务运行在正确端口
+
+**3. 数据格式化的重要性**：
+- 根据数据含义选择合适的格式
+- 信号强度是 0-1 的值，不是百分比
+- 保留合适的小数位数（价格 2 位，强度 3 位）
+
+**4. 条件渲染的最佳实践**：
+- 使用 `enabled` 控制查询时机
+- 使用条件渲染控制组件显示
+- 避免不必要的 API 调用和渲染
+
+**5. 架构演进的灵活性**：
+- 先实现基本功能，验证使用场景
+- 根据实际需求调整架构
+- 不要过度设计，保持简洁
+
+---

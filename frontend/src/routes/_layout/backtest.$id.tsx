@@ -1,8 +1,16 @@
-import { Container, Heading, Text, Box, Spinner, Grid } from "@chakra-ui/react";
+import {
+  Container,
+  Heading,
+  Text,
+  Box,
+  Spinner,
+  Grid,
+  Table,
+} from "@chakra-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { BacktestsService, StrategyService } from "@/client";
+import { BacktestsService, StrategiesService } from "@/client";
 
 export const Route = createFileRoute("/_layout/backtest/$id")({
   component: BacktestDetail,
@@ -16,6 +24,23 @@ function BacktestDetail() {
     queryKey: ["backtest", id],
     queryFn: async () => {
       const response = await BacktestsService.getBacktestById({
+        backtestId: id,
+      });
+      return response;
+    },
+  });
+
+  const {
+    data: signalsData,
+    isLoading: signalsLoading,
+    error: signalsError,
+  } = useQuery({
+    queryKey: ["signals", data?.strategy_name, id],
+    enabled: !!data?.strategy_name,
+    queryFn: async () => {
+      if (!data?.strategy_name) return { data: [], total: 0 };
+      const response = await StrategiesService.getBacktestSignals({
+        strategyName: data.strategy_name,
         backtestId: id,
       });
       return response;
@@ -245,6 +270,84 @@ function BacktestDetail() {
           </Box>
         </Grid>
       </Box>
+
+      {/* 交易信号列表 */}
+      {signalsData?.data && signalsData.data.length > 0 && (
+        <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
+          <Heading size="md" mb={4}>
+            {t("backtests.signals_title")}
+          </Heading>
+          <Table.Root variant="outline" size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader w="15%">
+                  {t("signals.time")}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader w="10%">
+                  {t("signals.symbol")}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader w="10%">
+                  {t("signals.action")}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader w="12%">
+                  {t("signals.price")}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader w="12%">
+                  {t("signals.strength")}
+                </Table.ColumnHeader>
+                <Table.ColumnHeader w="41%">
+                  {t("signals.message")}
+                </Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {signalsData.data.map((signal: any) => (
+                <Table.Row key={signal.id}>
+                  <Table.Cell w="15%">
+                    <Text fontSize="sm">
+                      {signal.signal_time
+                        ? new Date(signal.signal_time).toLocaleString("zh-CN", {
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                          })
+                        : "-"}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell w="10%">
+                    <Text color="blue.600" fontWeight="medium">
+                      {signal.symbol}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell w="10%">
+                    <Text
+                      color={signal.status === "buy" ? "red.500" : "green.500"}
+                      fontWeight="bold"
+                    >
+                      {signal.status === "buy" ? "买入" : "卖出"}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell w="12%">
+                    {signal.price ? signal.price.toFixed(2) : "-"}
+                  </Table.Cell>
+                  <Table.Cell w="12%">
+                    {signal.signal_strength
+                      ? signal.signal_strength.toFixed(3)
+                      : "-"}
+                  </Table.Cell>
+                  <Table.Cell w="41%">
+                    <Text fontSize="sm" color="gray.600">
+                      {signal.message || "-"}
+                    </Text>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        </Box>
+      )}
     </Container>
   );
 }

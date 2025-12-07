@@ -16,7 +16,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutStrategiesRouteImport } from './routes/_layout/strategies'
-import { Route as LayoutSignalsRouteImport } from './routes/_layout/signals'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
@@ -58,11 +57,6 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
 const LayoutStrategiesRoute = LayoutStrategiesRouteImport.update({
   id: '/strategies',
   path: '/strategies',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutSignalsRoute = LayoutSignalsRouteImport.update({
-  id: '/signals',
-  path: '/signals',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
@@ -117,7 +111,6 @@ export interface FileRoutesByFullPath {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/signals': typeof LayoutSignalsRoute
   '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
   '/backtest/$id': typeof LayoutBacktestIdRoute
@@ -134,7 +127,6 @@ export interface FileRoutesByTo {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/signals': typeof LayoutSignalsRoute
   '/strategies': typeof LayoutStrategiesRoute
   '/': typeof LayoutIndexRoute
   '/backtest/$id': typeof LayoutBacktestIdRoute
@@ -153,7 +145,6 @@ export interface FileRoutesById {
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/signals': typeof LayoutSignalsRoute
   '/_layout/strategies': typeof LayoutStrategiesRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/backtest/$id': typeof LayoutBacktestIdRoute
@@ -172,7 +163,6 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/settings'
-    | '/signals'
     | '/strategies'
     | '/'
     | '/backtest/$id'
@@ -189,7 +179,6 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/settings'
-    | '/signals'
     | '/strategies'
     | '/'
     | '/backtest/$id'
@@ -207,7 +196,6 @@ export interface FileRouteTypes {
     | '/_layout/factors'
     | '/_layout/items'
     | '/_layout/settings'
-    | '/_layout/signals'
     | '/_layout/strategies'
     | '/_layout/'
     | '/_layout/backtest/$id'
@@ -271,13 +259,6 @@ declare module '@tanstack/react-router' {
       path: '/strategies'
       fullPath: '/strategies'
       preLoaderRoute: typeof LayoutStrategiesRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/signals': {
-      id: '/_layout/signals'
-      path: '/signals'
-      fullPath: '/signals'
-      preLoaderRoute: typeof LayoutSignalsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -346,7 +327,6 @@ interface LayoutRouteChildren {
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutSignalsRoute: typeof LayoutSignalsRoute
   LayoutStrategiesRoute: typeof LayoutStrategiesRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutBacktestIdRoute: typeof LayoutBacktestIdRoute
@@ -360,7 +340,6 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutSignalsRoute: LayoutSignalsRoute,
   LayoutStrategiesRoute: LayoutStrategiesRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutBacktestIdRoute: LayoutBacktestIdRoute,

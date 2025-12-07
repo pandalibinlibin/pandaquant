@@ -99,7 +99,11 @@
     "symbol": "交易标的",
     "action": "操作类型",
     "confidence": "置信度",
-    "timestamp": "时间戳"
+    "timestamp": "时间戳",
+    "time": "时间",
+    "price": "价格",
+    "strength": "信号强度",
+    "message": "描述"
   },
   "backtests": {
     "title": "回测分析",
@@ -142,6 +146,7 @@
     "input_symbol_placeholder": "例如: 000001.SZ",
     "date_range": "日期范围",
     "submit": "开始回测",
-    "submitting": "提交中..."
+    "submitting": "提交中...",
+    "signals_title": "交易信号"
   }
 }

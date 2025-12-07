@@ -43,9 +43,10 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - **Signal Query API**: RESTful API to retrieve signals by backtest ID and strategy name
 - **Signal History**: Complete audit trail of all generated signals with timestamps and prices
 - **Backtest Association**: Signals linked to backtest results via foreign key relationships
+- **Frontend Integration**: Signal list embedded in backtest detail page with color-coded display
+- **Signal Visualization**: Tabular display with time, symbol, action, price, strength, and description
 - **Real-time Signals**: Live trading signal generation and monitoring (coming soon)
 - **Signal Push**: WebSocket-based signal delivery (coming soon)
-- **Multi-Strategy Support**: Monitor signals from multiple strategies simultaneously
 
 ### 🎨 Modern UI/UX
 - **Responsive Design**: Beautiful and intuitive interface built with Chakra UI v3
@@ -214,10 +215,10 @@ Detailed documentation is available in Chinese:
 - [x] Strategy detail page with configuration display
 - [x] Signal persistence and query API
 - [x] Backtest-signal association with foreign keys
+- [x] Signal list integration in backtest detail page
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
-- [ ] Signal monitoring dashboard (frontend)
 - [ ] Real-time signal push (WebSocket)
 - [ ] Performance charts and visualizations
 

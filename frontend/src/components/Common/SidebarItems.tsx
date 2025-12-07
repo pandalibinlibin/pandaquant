@@ -41,7 +41,6 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
       title: t("navigation.strategies"),
       path: "/strategies",
     },
-    { icon: FiActivity, title: t("navigation.signals"), path: "/signals" },
     { icon: FiBarChart2, title: t("navigation.backtests"), path: "/backtests" },
     { icon: FiSettings, title: t("navigation.settings"), path: "/settings" },
   ];

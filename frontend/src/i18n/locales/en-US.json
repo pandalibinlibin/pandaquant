@@ -99,7 +99,11 @@
     "symbol": "Symbol",
     "action": "Action",
     "confidence": "Confidence",
-    "timestamp": "Timestamp"
+    "timestamp": "Timestamp",
+    "time": "Time",
+    "price": "Price",
+    "strength": "Signal Strength",
+    "message": "Message"
   },
   "backtests": {
     "title": "Backtest Analysis",
@@ -142,6 +146,7 @@
     "input_symbol_placeholder": "e.g., 000001.SZ",
     "date_range": "Date Range",
     "submit": "Start Backtest",
-    "submitting": "Submitting..."
+    "submitting": "Submitting...",
+    "signals_title": "Trading Signals"
   }
 }

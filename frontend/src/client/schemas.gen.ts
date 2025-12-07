@@ -527,6 +527,43 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const DataGroupInfoSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name',
+            description: 'DataGroup name'
+        },
+        datagroup_class: {
+            type: 'string',
+            title: 'Datagroup Class',
+            description: 'DataGroup class name (e.g., DailyDataGroup)'
+        },
+        data_type: {
+            type: 'string',
+            title: 'Data Type',
+            description: 'Data type (e.g., daily, minute)'
+        },
+        weight: {
+            type: 'number',
+            title: 'Weight',
+            description: 'DataGroup weight in strategy'
+        },
+        factors: {
+            items: {
+                '$ref': '#/components/schemas/FactorInstanceInfo'
+            },
+            type: 'array',
+            title: 'Factors',
+            description: 'Factor instances in this group'
+        }
+    },
+    type: 'object',
+    required: ['name', 'datagroup_class', 'data_type', 'weight', 'factors'],
+    title: 'DataGroupInfo',
+    description: 'DataGroup configuration information'
+} as const;
+
 export const DataResponseSchema = {
     properties: {
         data: {
@@ -704,6 +741,31 @@ export const FactorInfoSchema = {
     description: 'Factor information response model'
 } as const;
 
+export const FactorInstanceInfoSchema = {
+    properties: {
+        instance_name: {
+            type: 'string',
+            title: 'Instance Name',
+            description: 'Factor instance name (e.g., MA_5_SMA)'
+        },
+        factor_class: {
+            type: 'string',
+            title: 'Factor Class',
+            description: 'Factor class name (e.g., MovingAverageFactor)'
+        },
+        parameters: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Parameters',
+            description: 'Factor instance parameters'
+        }
+    },
+    type: 'object',
+    required: ['instance_name', 'factor_class', 'parameters'],
+    title: 'FactorInstanceInfo',
+    description: 'Factor instance information in DataGroup'
+} as const;
+
 export const FactorRegisterRequestSchema = {
     properties: {
         name: {
@@ -808,17 +870,38 @@ export const GlobalBacktestItemSchema = {
             description: 'Initial capital'
         },
         final_value: {
-            type: 'number',
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Final Value',
             description: 'Final portfolio value'
         },
         total_return: {
-            type: 'number',
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Total Return',
             description: 'Total return'
         },
         total_return_pct: {
-            type: 'number',
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Total Return Pct',
             description: 'Total return percentage'
         },
@@ -990,7 +1073,7 @@ export const GlobalBacktestItemSchema = {
         }
     },
     type: 'object',
-    required: ['backtest_id', 'strategy_name', 'symbol', 'start_date', 'end_date', 'initial_capital', 'final_value', 'total_return', 'total_return_pct', 'status', 'created_at'],
+    required: ['backtest_id', 'strategy_name', 'symbol', 'start_date', 'end_date', 'initial_capital', 'status', 'created_at'],
     title: 'GlobalBacktestItem',
     description: 'Global backtest item model'
 } as const;
@@ -1576,90 +1659,6 @@ export const SignalCreateRequestSchema = {
     description: 'Signal creation request model'
 } as const;
 
-export const SignalInfoSchema = {
-    properties: {
-        id: {
-            type: 'string',
-            title: 'Id',
-            description: 'Signal ID'
-        },
-        symbol: {
-            type: 'string',
-            title: 'Symbol',
-            description: 'Trading symbol'
-        },
-        action: {
-            type: 'string',
-            title: 'Action',
-            description: 'Signal action (buy/sell/hold)'
-        },
-        confidence: {
-            type: 'number',
-            title: 'Confidence',
-            description: 'Signal confidence score'
-        },
-        strategy_name: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Strategy Name',
-            description: 'Strategy name'
-        },
-        timestamp: {
-            type: 'string',
-            title: 'Timestamp',
-            description: 'Signal timestamp'
-        },
-        metadata: {
-            additionalProperties: true,
-            type: 'object',
-            title: 'Metadata',
-            description: 'Additional signal metadata'
-        }
-    },
-    type: 'object',
-    required: ['id', 'symbol', 'action', 'confidence', 'timestamp', 'metadata'],
-    title: 'SignalInfo',
-    description: 'Signal information response model'
-} as const;
-
-export const SignalListResponseSchema = {
-    properties: {
-        signal: {
-            items: {
-                '$ref': '#/components/schemas/SignalInfo'
-            },
-            type: 'array',
-            title: 'Signal',
-            description: 'List of signals'
-        },
-        total: {
-            type: 'integer',
-            title: 'Total',
-            description: 'Total number of signals'
-        },
-        page: {
-            type: 'integer',
-            title: 'Page',
-            description: 'Current page number'
-        },
-        size: {
-            type: 'integer',
-            title: 'Size',
-            description: 'Page size'
-        }
-    },
-    type: 'object',
-    required: ['signal', 'total', 'page', 'size'],
-    title: 'SignalListResponse',
-    description: 'Signal list response model'
-} as const;
-
 export const StockDataRequestSchema = {
     properties: {
         data_type: {
@@ -1725,6 +1724,40 @@ export const StrategiesListSchema = {
     required: ['data', 'count'],
     title: 'StrategiesList',
     description: 'List of strategies'
+} as const;
+
+export const StrategyDetailInfoSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name',
+            description: 'Strategy name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description',
+            description: 'Strategy description'
+        },
+        data_groups: {
+            items: {
+                '$ref': '#/components/schemas/DataGroupInfo'
+            },
+            type: 'array',
+            title: 'Data Groups',
+            description: 'DataGroup configurations'
+        }
+    },
+    type: 'object',
+    required: ['name', 'data_groups'],
+    title: 'StrategyDetailInfo',
+    description: 'Detailed strategy information including DataGroup configs'
 } as const;
 
 export const StrategyInfoSchema = {
@@ -2037,4 +2070,180 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const app__api__routes__signals__SignalInfoSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            title: 'Id',
+            description: 'Signal ID'
+        },
+        symbol: {
+            type: 'string',
+            title: 'Symbol',
+            description: 'Trading symbol'
+        },
+        action: {
+            type: 'string',
+            title: 'Action',
+            description: 'Signal action (buy/sell/hold)'
+        },
+        confidence: {
+            type: 'number',
+            title: 'Confidence',
+            description: 'Signal confidence score'
+        },
+        strategy_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Strategy Name',
+            description: 'Strategy name'
+        },
+        timestamp: {
+            type: 'string',
+            title: 'Timestamp',
+            description: 'Signal timestamp'
+        },
+        metadata: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Metadata',
+            description: 'Additional signal metadata'
+        }
+    },
+    type: 'object',
+    required: ['id', 'symbol', 'action', 'confidence', 'timestamp', 'metadata'],
+    title: 'SignalInfo',
+    description: 'Signal information response model'
+} as const;
+
+export const app__api__routes__signals__SignalListResponseSchema = {
+    properties: {
+        signal: {
+            items: {
+                '$ref': '#/components/schemas/app__api__routes__signals__SignalInfo'
+            },
+            type: 'array',
+            title: 'Signal',
+            description: 'List of signals'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total',
+            description: 'Total number of signals'
+        },
+        page: {
+            type: 'integer',
+            title: 'Page',
+            description: 'Current page number'
+        },
+        size: {
+            type: 'integer',
+            title: 'Size',
+            description: 'Page size'
+        }
+    },
+    type: 'object',
+    required: ['signal', 'total', 'page', 'size'],
+    title: 'SignalListResponse',
+    description: 'Signal list response model'
+} as const;
+
+export const app__api__routes__strategies__SignalInfoSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            title: 'Id',
+            description: 'Signal ID'
+        },
+        signal_time: {
+            type: 'string',
+            title: 'Signal Time',
+            description: 'Signal generation time (ISO 8601)'
+        },
+        symbol: {
+            type: 'string',
+            title: 'Symbol',
+            description: 'Trading symbol'
+        },
+        status: {
+            type: 'string',
+            title: 'Status',
+            description: 'Signal type (buy/sell/hold)'
+        },
+        signal_strength: {
+            type: 'number',
+            title: 'Signal Strength',
+            description: 'Signal confidence (0-1)'
+        },
+        price: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price',
+            description: 'Signal price'
+        },
+        quantity: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Quantity',
+            description: 'Suggested quantity'
+        },
+        message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Message',
+            description: 'Signal message'
+        }
+    },
+    type: 'object',
+    required: ['id', 'signal_time', 'symbol', 'status', 'signal_strength'],
+    title: 'SignalInfo',
+    description: 'Signal information response model'
+} as const;
+
+export const app__api__routes__strategies__SignalListResponseSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/app__api__routes__strategies__SignalInfo'
+            },
+            type: 'array',
+            title: 'Data',
+            description: 'List of signals'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total',
+            description: 'Total number of signals'
+        }
+    },
+    type: 'object',
+    required: ['data', 'total'],
+    title: 'SignalListResponse',
+    description: 'Signal list response model'
 } as const;
