@@ -286,12 +286,30 @@ class StrategyService:
 
         cerebro.broker.addcommissioninfo(comminfo)
 
+        # Extract data_type from the first DataGroup that has OHLCV data
+        data_type = "daily"
+        if data_group_configs:
+            for config in data_group_configs:
+                temp_group = create_data_group_from_config(config)
+                if hasattr(temp_group, "data_type"):
+                    data_type = temp_group.data_type
+                    logger.info(
+                        f"Found data_type '{data_type}' from DataGroup '{temp_group.name}'"
+                    )
+                    break
+
+            else:
+                logger.warning(
+                    "No DataGroup with data_type found, using default 'daily'"
+                )
+
         # Create BacktestResult record BEFORE running backtest
         # This allows signals to reference the backtest_id via foreign key
         backtest_result = BacktestResult(
             id=UUID(backtest_id),
             strategy_name=strategy_name,
             symbol=symbol,
+            data_type=data_type,
             start_date=start_date,
             end_date=end_date,
             initial_capital=initial_capital,

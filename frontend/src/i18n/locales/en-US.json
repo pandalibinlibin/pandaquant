@@ -147,6 +147,14 @@
     "date_range": "Date Range",
     "submit": "Start Backtest",
     "submitting": "Submitting...",
-    "signals_title": "Trading Signals"
+    "signals_title": "Trading Signals",
+    "price_chart_title": "Price Chart"
+  },
+  "chart": {
+    "buySignal": "Buy Signal",
+    "sellSignal": "Sell Signal",
+    "time": "Time",
+    "price": "Price",
+    "strength": "Strength"
   }
 }

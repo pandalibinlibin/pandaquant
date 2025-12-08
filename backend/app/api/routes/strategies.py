@@ -4,6 +4,7 @@ Strategy management API routes
 
 from fastapi import APIRouter
 from app.models import BacktestResult
+from sqlmodel import select
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
 
@@ -733,3 +734,57 @@ def delete_backtest_result(
     session.commit()
 
     return {"message": "Backtest result deleted successfully"}
+
+
+@router.get(
+    "/{strategy_name}/backtests/{backtest_id}/price_data",
+)
+async def get_backtest_price_data(
+    strategy_name: str,
+    backtest_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+):
+    """
+    Get price data for a specific backtest
+    """
+    from uuid import UUID
+    from app.domains.data.services import DataService
+
+    statement = (
+        select(BacktestResult)
+        .where(BacktestResult.id == UUID(backtest_id))
+        .where(BacktestResult.strategy_name == strategy_name)
+    )
+    backtest = session.exec(statement).first()
+
+    if not backtest:
+        raise HTTPException(status_code=404, detail="Backtest not found")
+
+    data_service = DataService()
+
+    data_type = backtest.data_type
+
+    measurement = data_type
+
+    price_df = await data_service.get_data_from_influxdb(
+        measurement=measurement,
+        start_date=backtest.start_date,
+        end_date=backtest.end_date,
+        tags={"symbol": backtest.symbol},
+        fields=["close"],
+    )
+
+    if price_df.empty:
+        return {"data": [], "total": 0}
+
+    price_data = []
+    for _, row in price_df.iterrows():
+        price_data.append(
+            {
+                "time": row["timestamp"].strftime("%Y-%m-%d"),
+                "value": float(row["close"]),
+            }
+        )
+
+    return {"data": price_data, "total": len(price_data)}

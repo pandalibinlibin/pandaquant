@@ -1182,6 +1182,13 @@ export type StrategiesGetBacktestSignalsData = {
 
 export type StrategiesGetBacktestSignalsResponse = (app__api__routes__strategies__SignalListResponse);
 
+export type StrategiesGetBacktestPriceDataData = {
+    backtestId: string;
+    strategyName: string;
+};
+
+export type StrategiesGetBacktestPriceDataResponse = (unknown);
+
 export type UsersReadUsersData = {
     limit?: number;
     skip?: number;

@@ -147,6 +147,14 @@
     "date_range": "日期范围",
     "submit": "开始回测",
     "submitting": "提交中...",
-    "signals_title": "交易信号"
+    "signals_title": "交易信号",
+    "price_chart_title": "价格走势"
+  },
+  "chart": {
+    "buySignal": "买入信号",
+    "sellSignal": "卖出信号",
+    "time": "时间",
+    "price": "价格",
+    "strength": "强度"
   }
 }

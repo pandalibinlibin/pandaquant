@@ -224,6 +224,7 @@ class BacktestResult(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     strategy_name: str = Field(max_length=100)
     symbol: str = Field(max_length=20)
+    data_type: str = Field(default="daily", max_length=20)
     start_date: str = Field(max_length=20)
     end_date: str = Field(max_length=20)
     initial_capital: float

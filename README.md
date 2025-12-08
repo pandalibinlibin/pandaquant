@@ -36,7 +36,8 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - **Asynchronous Execution**: Non-blocking backtest execution with real-time status updates
 - **Historical Records**: Complete backtest history with detailed performance analysis
 - **Signal Persistence**: Automatic signal saving to database with backtest association
-- **Visual Analytics**: Performance charts and equity curves (coming soon)
+- **Price Chart Visualization**: Interactive price charts with signal markers using lightweight-charts
+- **Signal Overlay**: Buy/sell signals displayed as arrows on price charts with hover details
 
 ### 🔔 Signal Management
 - **Signal Persistence**: All trading signals automatically saved to database during backtesting
@@ -73,6 +74,7 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - 💎 **[TypeScript](https://www.typescriptlang.org)**: Type-safe JavaScript
 - ⚡ **[Vite](https://vitejs.dev)**: Lightning-fast build tool
 - 🎨 **[Chakra UI v3](https://chakra-ui.com)**: Beautiful component library
+- 📊 **[Lightweight Charts](https://tradingview.github.io/lightweight-charts/)**: Professional financial charts
 - 🔄 **[TanStack Router](https://tanstack.com/router)**: Type-safe routing
 - 🔍 **[TanStack Query](https://tanstack.com/query)**: Powerful data fetching
 - 🌐 **[React i18next](https://react.i18next.com)**: Internationalization
@@ -216,11 +218,13 @@ Detailed documentation is available in Chinese:
 - [x] Signal persistence and query API
 - [x] Backtest-signal association with foreign keys
 - [x] Signal list integration in backtest detail page
+- [x] Price chart visualization with signal markers
+- [x] Interactive hover tooltips for signal details
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
 - [ ] Real-time signal push (WebSocket)
-- [ ] Performance charts and visualizations
+- [ ] Advanced chart features (indicators, volume)
 
 ### 📋 Planned
 - [ ] Paper trading simulation
