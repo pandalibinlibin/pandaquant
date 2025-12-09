@@ -39,6 +39,8 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - **Price Chart Visualization**: Interactive price charts with signal markers using lightweight-charts
 - **Signal Overlay**: Buy/sell signals displayed as arrows on price charts with hover details
 - **Equity Curve Visualization**: Real-time portfolio value tracking with interactive green curve charts
+- **Max Drawdown Markers**: Red markers on equity curve highlighting peak and trough points
+- **Drawdown Info Card**: Detailed drawdown information with percentage, period, and amount
 - **Performance Analytics**: Visual representation of account value changes over the backtest period
 
 ### 🔔 Signal Management
@@ -223,13 +225,15 @@ Detailed documentation is available in Chinese:
 - [x] Price chart visualization with signal markers
 - [x] Interactive hover tooltips for signal details
 - [x] Equity curve chart with portfolio value tracking
+- [x] Max drawdown visualization with peak/trough markers
+- [x] Drawdown information card with detailed metrics
 - [x] DateTime serialization for JSON compatibility
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
 - [ ] Real-time signal push (WebSocket)
-- [ ] Advanced chart features (drawdown, monthly returns)
-- [ ] Performance metrics cards
+- [ ] Advanced chart features (monthly returns, drawdown curve)
+- [ ] Performance metrics dashboard
 
 ### 📋 Planned
 - [ ] Paper trading simulation

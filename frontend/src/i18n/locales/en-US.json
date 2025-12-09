@@ -11,7 +11,8 @@
     "search": "Search",
     "developing": "Under Development",
     "debug": "Debug Info",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "currency": "CNY"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -149,7 +150,10 @@
     "submitting": "Submitting...",
     "signals_title": "Trading Signals",
     "price_chart_title": "Price Chart",
-    "equity_curve_title": "Equity Curve"
+    "equity_curve_title": "Equity Curve",
+    "max_drawdown": "Max Drawdown",
+    "drawdown_period": "Drawdown Period",
+    "drawdown_amount": "Drawdown Amount"
   },
   "chart": {
     "buySignal": "Buy Signal",

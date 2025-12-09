@@ -102,6 +102,9 @@ const PriceChart = ({ priceData, signals, height = 400 }: PriceChartProps) => {
       lineSeries.setMarkers(markers);
     }
 
+    // Fit content to show entire backtest period
+    chart.timeScale().fitContent();
+
     const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({

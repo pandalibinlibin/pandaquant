@@ -11,7 +11,8 @@
     "search": "查询",
     "developing": "开发中",
     "debug": "调试信息",
-    "configuration": "配置"
+    "configuration": "配置",
+    "currency": "元"
   },
   "navigation": {
     "dashboard": "仪表板",
@@ -149,7 +150,10 @@
     "submitting": "提交中...",
     "signals_title": "交易信号",
     "price_chart_title": "价格走势",
-    "equity_curve_title": "收益曲线"
+    "equity_curve_title": "收益曲线",
+    "max_drawdown": "最大回撤",
+    "drawdown_period": "回撤期间",
+    "drawdown_amount": "回撤金额"
   },
   "chart": {
     "buySignal": "买入信号",

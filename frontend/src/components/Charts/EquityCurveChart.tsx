@@ -1,10 +1,5 @@
 import { useEffect, useRef } from "react";
-import {
-  createChart,
-  IChartApi,
-  ISeriesApi,
-  Time,
-} from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi, Time } from "lightweight-charts";
 import { useTranslation } from "react-i18next";
 
 interface EquityCurveData {
@@ -12,13 +7,24 @@ interface EquityCurveData {
   value: number;
 }
 
+interface MaxDrawdownInfo {
+  peak_date: string;
+  trough_date: string;
+  peak_value: number;
+  trough_value: number;
+  drawdown_pct: number;
+  drawdown_amount: number;
+}
+
 interface EquityCurveChartProps {
   data: EquityCurveData[];
+  maxDrawdown?: MaxDrawdownInfo | null;
   height?: number;
 }
 
 export const EquityCurveChart = ({
   data,
+  maxDrawdown,
   height = 400,
 }: EquityCurveChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -71,6 +77,30 @@ export const EquityCurveChart = ({
     }));
 
     lineSeries.setData(formattedData);
+
+    // Add max drawdown markers if available
+    if (maxDrawdown && maxDrawdown.peak_date && maxDrawdown.trough_date) {
+      const markers = [
+        {
+          time: maxDrawdown.peak_date.split("T")[0] as Time,
+          position: "aboveBar" as const,
+          color: "#ef5350",
+          shape: "circle" as const,
+          text: "Peak",
+          size: 1,
+        },
+        {
+          time: maxDrawdown.trough_date.split("T")[0] as Time,
+          position: "belowBar" as const,
+          color: "#ef5350",
+          shape: "circle" as const,
+          text: "Trough",
+          size: 1,
+        },
+      ];
+      
+      lineSeries.setMarkers(markers);
+    }
 
     // Fit content
     chart.timeScale().fitContent();

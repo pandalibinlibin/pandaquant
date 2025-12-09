@@ -825,15 +825,47 @@ async def get_backtest_equity_curve(
         return {"data": [], "total": 0}
 
     initial_capital = backtest.initial_capital
+
     equity_data = []
 
     sorted_dates = sorted(time_return.keys())
 
+    # Calculate equity curve and track peak/drawdown
     current_value = initial_capital
+    peak_value = initial_capital
+    peak_date = None
+    max_drawdown_pct = 0
+    max_drawdown_info = None
+
     for date_str in sorted_dates:
         daily_return = time_return[date_str]
         current_value = current_value * (1 + daily_return)
 
+        # Track peak
+        if current_value > peak_value:
+            peak_value = current_value
+            peak_date = date_str
+
+        # Calculate drawdown from peak
+        if peak_value > 0:
+            drawdown_pct = (current_value - peak_value) / peak_value
+
+            # Track maximum drawdown
+            if drawdown_pct < max_drawdown_pct:
+                max_drawdown_pct = drawdown_pct
+                max_drawdown_info = {
+                    "peak_date": peak_date,
+                    "trough_date": date_str,
+                    "peak_value": float(peak_value),
+                    "trough_value": float(current_value),
+                    "drawdown_pct": float(drawdown_pct),
+                    "drawdown_amount": float(peak_value - current_value),
+                }
+
         equity_data.append({"time": date_str, "value": float(current_value)})
 
-    return {"data": equity_data, "total": len(equity_data)}
+    return {
+        "data": equity_data,
+        "total": len(equity_data),
+        "max_drawdown": max_drawdown_info,
+    }

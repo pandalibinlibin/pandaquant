@@ -1266,7 +1266,186 @@ lightweight-charts 显示
 - 🎯 标注最终价值
 - 🖱️ 支持缩放和平移
 
-### 9. 调度层 🔄
+### 9. 最大回撤可视化 ✅ (2025-12-08)
+
+#### 功能概述
+
+在收益曲线图上直接标注最大回撤的峰值点和谷底点，并在图表下方显示详细的回撤信息卡片，帮助用户直观了解策略的最大风险。
+
+#### 文件位置
+
+**后端**：
+- `backend/app/api/routes/strategies.py` - 收益曲线 API（添加最大回撤计算）
+
+**前端**：
+- `frontend/src/components/Charts/EquityCurveChart.tsx` - 收益曲线图表组件（添加标记功能）
+- `frontend/src/routes/_layout/backtest.$id.tsx` - 回测详情页面（添加回撤信息卡片）
+- `frontend/src/i18n/locales/zh-CN.json` - 中文翻译
+- `frontend/src/i18n/locales/en-US.json` - 英文翻译
+
+#### 核心功能
+
+**方案 A：图表标记**
+- **峰值标记（Peak）**：红色圆点，显示在收益曲线上方
+- **谷底标记（Trough）**：红色圆点，显示在收益曲线下方
+- **标记位置**：精确定位到最大回撤发生的日期
+- **视觉效果**：使用 `lightweight-charts` 的 `setMarkers` API
+
+**方案 B：信息卡片**
+- **回撤百分比**：显示最大回撤的百分比（如 -13.38%）
+- **回撤期间**：显示从峰值到谷底的日期范围
+- **回撤金额**：显示具体的资金损失金额
+- **卡片样式**：浅红色背景，红色边框，清晰的排版
+
+#### 技术实现
+
+**后端 API 增强**：
+```python
+# 在计算收益曲线时同时追踪最大回撤
+peak_value = initial_capital
+peak_date = None
+max_drawdown_pct = 0
+max_drawdown_info = None
+
+for date_str in sorted_dates:
+    daily_return = time_return[date_str]
+    current_value = current_value * (1 + daily_return)
+    
+    # Track peak
+    if current_value > peak_value:
+        peak_value = current_value
+        peak_date = date_str
+    
+    # Calculate drawdown from peak
+    if peak_value > 0:
+        drawdown_pct = (current_value - peak_value) / peak_value
+        
+        # Track maximum drawdown
+        if drawdown_pct < max_drawdown_pct:
+            max_drawdown_pct = drawdown_pct
+            max_drawdown_info = {
+                "peak_date": peak_date,
+                "trough_date": date_str,
+                "peak_value": float(peak_value),
+                "trough_value": float(current_value),
+                "drawdown_pct": float(drawdown_pct),
+                "drawdown_amount": float(peak_value - current_value)
+            }
+
+return {
+    "data": equity_data,
+    "total": len(equity_data),
+    "max_drawdown": max_drawdown_info  # 新增
+}
+```
+
+**前端图表标记**：
+```typescript
+// Add max drawdown markers if available
+if (maxDrawdown && maxDrawdown.peak_date && maxDrawdown.trough_date) {
+  const markers = [
+    {
+      time: maxDrawdown.peak_date.split("T")[0] as Time,
+      position: "aboveBar" as const,
+      color: "#ef5350",
+      shape: "circle" as const,
+      text: "Peak",
+      size: 1,
+    },
+    {
+      time: maxDrawdown.trough_date.split("T")[0] as Time,
+      position: "belowBar" as const,
+      color: "#ef5350",
+      shape: "circle" as const,
+      text: "Trough",
+      size: 1,
+    },
+  ];
+  
+  lineSeries.setMarkers(markers);
+}
+```
+
+**前端信息卡片**：
+```tsx
+{equityData?.max_drawdown && (
+  <Box mt={4} p={5} bg="red.50" borderRadius="md" borderWidth="1px" borderColor="red.200">
+    <Text fontSize="md" color="gray.700" lineHeight="tall">
+      <Text as="span" fontWeight="semibold">📉 最大回撤:</Text>{" "}
+      {(equityData.max_drawdown.drawdown_pct * 100).toFixed(2)}%
+      <Text as="span" mx={4}>•</Text>
+      <Text as="span" fontWeight="semibold">📍 回撤期间:</Text>{" "}
+      {equityData.max_drawdown.peak_date.split("T")[0]} → {equityData.max_drawdown.trough_date.split("T")[0]}
+      <Text as="span" mx={4}>•</Text>
+      <Text as="span" fontWeight="semibold">💰 回撤金额:</Text>{" "}
+      {equityData.max_drawdown.drawdown_amount.toLocaleString()} 元
+    </Text>
+  </Box>
+)}
+```
+
+#### 技术要点
+
+**最大回撤计算逻辑**：
+- **追踪峰值**：遍历每日收益时，记录历史最高账户价值
+- **计算回撤**：当前价值相对于峰值的跌幅百分比
+- **更新最大回撤**：保留最大的回撤幅度及其详细信息
+- **关键点**：回撤是负数，使用 `<` 比较（-10% < -5%）
+
+**lightweight-charts Markers API**：
+- **position**：`"aboveBar"` 或 `"belowBar"`，控制标记在线的上方或下方
+- **color**：`"#ef5350"`（Material Design Red 400）
+- **shape**：`"circle"`（圆形标记）
+- **text**：标记上显示的文字（"Peak" 或 "Trough"）
+- **as const**：TypeScript 字面量类型，确保类型精确匹配
+
+**UI/UX 优化**：
+- **内边距**：`p={5}` 提供舒适的空间
+- **字体大小**：`fontSize="md"` 确保可读性
+- **行高**：`lineHeight="tall"` 增加垂直间距
+- **标签加粗**：`fontWeight="semibold"` 突出关键信息
+- **分隔符**：使用圆点 `•` 和 `mx={4}` 增加水平间距
+
+#### 测试结果（2025-12-08）
+
+**功能验证**：
+- ✅ 峰值标记正确显示（红色圆点，线上方）
+- ✅ 谷底标记正确显示（红色圆点，线下方）
+- ✅ 回撤信息卡片正确显示
+- ✅ 回撤百分比计算准确
+- ✅ 回撤期间日期正确
+- ✅ 回撤金额格式化正确（千分位）
+- ✅ 国际化翻译正常工作
+
+**数据验证**（实际回测案例）：
+- 峰值日期：2024-10-08
+- 谷底日期：2024-12-17
+- 峰值金额：约 1,160,000 元
+- 谷底金额：约 900,000 元
+- 最大回撤：-13.38%
+- 回撤金额：151,257.324 元
+
+**用户体验**：
+- ✅ 标记清晰可见
+- ✅ 卡片排版舒适
+- ✅ 信息一目了然
+- ✅ 响应式布局正常
+
+#### 用户价值
+
+**风险分析增强**：
+1. **可视化风险**：直观看到账户最大损失发生的位置
+2. **时间维度**：了解回撤发生的时间和持续期
+3. **金额量化**：清楚知道具体损失金额
+4. **决策支持**：帮助评估策略风险承受能力
+
+**专业性提升**：
+- 符合专业量化平台标准
+- 完整的风险收益分析
+- 清晰的数据展示
+- 良好的用户体验
+
+### 10. 调度层 🔄
 
 #### 计划功能
 

@@ -320,7 +320,26 @@ function BacktestDetail() {
             {t("common.error")}: {equityError.message}
           </Text>
         ) : (
-          <EquityCurveChart data={equityData?.data || []} height={400} />
+          <EquityCurveChart 
+            data={equityData?.data || []} 
+            maxDrawdown={equityData?.max_drawdown || null}
+            height={400} 
+          />
+        )}
+        {/* 最大回撤信息卡片 */}
+        {equityData?.max_drawdown && (
+          <Box mt={4} p={5} bg="red.50" borderRadius="md" borderWidth="1px" borderColor="red.200">
+            <Text fontSize="md" color="gray.700" lineHeight="tall">
+              <Text as="span" fontWeight="semibold">📉 {t("backtests.max_drawdown")}:</Text>{" "}
+              {(equityData.max_drawdown.drawdown_pct * 100).toFixed(2)}%
+              <Text as="span" mx={4}>•</Text>
+              <Text as="span" fontWeight="semibold">📍 {t("backtests.drawdown_period")}:</Text>{" "}
+              {equityData.max_drawdown.peak_date.split("T")[0]} → {equityData.max_drawdown.trough_date.split("T")[0]}
+              <Text as="span" mx={4}>•</Text>
+              <Text as="span" fontWeight="semibold">💰 {t("backtests.drawdown_amount")}:</Text>{" "}
+              {equityData.max_drawdown.drawdown_amount.toLocaleString()} {t("common.currency")}
+            </Text>
+          </Box>
         )}
       </Box>
       {/* 价格图表 */}
