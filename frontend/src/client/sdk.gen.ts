@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { BacktestsListAllBacktestsData, BacktestsListAllBacktestsResponse, BacktestsCompareBacktestsData, BacktestsCompareBacktestsResponse, BacktestsGetBacktestByIdData, BacktestsGetBacktestByIdResponse, DataFetchStockDataData, DataFetchStockDataResponse, DataFetchMacroDataData, DataFetchMacroDataResponse, DataFetchIndustryConceptDataData, DataFetchIndustryConceptDataResponse, FactorsListFactorClassesResponse, FactorsListFactorsData, FactorsListFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUnregisterFactorData, FactorsUnregisterFactorResponse, FactorsCalculateFactorData, FactorsCalculateFactorResponse, FactorsGetFactorStatusData, FactorsGetFactorStatusResponse, FactorsRegisterFactorData, FactorsRegisterFactorResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignalsListSignalsData, SignalsListSignalsResponse, SignalsCreateSignalData, SignalsCreateSignalResponse, SignalsGetSignalData, SignalsGetSignalResponse, StrategiesListStrategiesResponse, StrategiesGetStrategyData, StrategiesGetStrategyResponse, StrategiesGetStrategyDetailData, StrategiesGetStrategyDetailResponse, StrategiesRunBacktestData, StrategiesRunBacktestResponse, StrategiesGetBacktestResultData, StrategiesGetBacktestResultResponse, StrategiesDeleteBacktestResultData, StrategiesDeleteBacktestResultResponse, StrategiesGetBacktestHistoryData, StrategiesGetBacktestHistoryResponse, StrategiesGetBacktestSignalsData, StrategiesGetBacktestSignalsResponse, StrategiesGetBacktestPriceDataData, StrategiesGetBacktestPriceDataResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BacktestsListAllBacktestsData, BacktestsListAllBacktestsResponse, BacktestsCompareBacktestsData, BacktestsCompareBacktestsResponse, BacktestsGetBacktestByIdData, BacktestsGetBacktestByIdResponse, DataFetchStockDataData, DataFetchStockDataResponse, DataFetchMacroDataData, DataFetchMacroDataResponse, DataFetchIndustryConceptDataData, DataFetchIndustryConceptDataResponse, FactorsListFactorClassesResponse, FactorsListFactorsData, FactorsListFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUnregisterFactorData, FactorsUnregisterFactorResponse, FactorsCalculateFactorData, FactorsCalculateFactorResponse, FactorsGetFactorStatusData, FactorsGetFactorStatusResponse, FactorsRegisterFactorData, FactorsRegisterFactorResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignalsListSignalsData, SignalsListSignalsResponse, SignalsCreateSignalData, SignalsCreateSignalResponse, SignalsGetSignalData, SignalsGetSignalResponse, StrategiesListStrategiesResponse, StrategiesGetStrategyData, StrategiesGetStrategyResponse, StrategiesGetStrategyDetailData, StrategiesGetStrategyDetailResponse, StrategiesRunBacktestData, StrategiesRunBacktestResponse, StrategiesGetBacktestResultData, StrategiesGetBacktestResultResponse, StrategiesDeleteBacktestResultData, StrategiesDeleteBacktestResultResponse, StrategiesGetBacktestHistoryData, StrategiesGetBacktestHistoryResponse, StrategiesGetBacktestSignalsData, StrategiesGetBacktestSignalsResponse, StrategiesGetBacktestPriceDataData, StrategiesGetBacktestPriceDataResponse, StrategiesGetBacktestEquityCurveData, StrategiesGetBacktestEquityCurveResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class BacktestsService {
     /**
@@ -1178,6 +1178,31 @@ export class StrategiesService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/strategies/{strategy_name}/backtests/{backtest_id}/price_data',
+            path: {
+                strategy_name: data.strategyName,
+                backtest_id: data.backtestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Backtest Equity Curve
+     * Get equity curve data for a backtest
+     *
+     * Returns time series of portfolio value over the backtest period
+     * @param data The data for the request.
+     * @param data.strategyName
+     * @param data.backtestId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestEquityCurve(data: StrategiesGetBacktestEquityCurveData): CancelablePromise<StrategiesGetBacktestEquityCurveResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/strategies/{strategy_name}/backtests/{backtest_id}/equity_curve',
             path: {
                 strategy_name: data.strategyName,
                 backtest_id: data.backtestId

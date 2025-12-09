@@ -7,6 +7,7 @@ import inspect
 from typing import Dict, Any, Optional, Type, List
 import backtrader as bt
 import asyncio
+import json
 
 from app.core.logging import get_logger
 from app.domains.data.services import DataService, data_service
@@ -575,6 +576,32 @@ class StrategyService:
             backtest_result.sqn = performance.get("sqn")
             backtest_result.chart_path = chart_path
             backtest_result.status = "completed"
+
+            # Store performance data in result_data field
+            # Convert datetime objects to strings for JSON serialization
+            def convert_datetime_to_str(obj):
+                """Recursively convert datetime objects to ISO format strings"""
+                from datetime import date
+
+                if isinstance(obj, datetime):
+                    return obj.strftime("%Y-%m-%d")
+                elif isinstance(obj, date):
+                    return obj.strftime("%Y-%m-%d")
+                elif isinstance(obj, dict):
+                    return {
+                        convert_datetime_to_str(k): convert_datetime_to_str(v)
+                        for k, v in obj.items()
+                    }
+                elif isinstance(obj, (list, tuple)):
+                    return [convert_datetime_to_str(item) for item in obj]
+                else:
+                    return obj
+
+            performance_serializable = convert_datetime_to_str(performance)
+            backtest_result.result_data = json.dumps(
+                {"performance": performance_serializable}
+            )
+
             session.commit()
             session.refresh(backtest_result)
             logger.info(f"Backtest result updated to completed: {backtest_id}")

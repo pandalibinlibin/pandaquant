@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { BacktestsService, StrategiesService } from "@/client";
 import PriceChart from "@/components/Charts/PriceChart";
+import { EquityCurveChart } from "@/components/Charts/EquityCurveChart";
 
 export const Route = createFileRoute("/_layout/backtest/$id")({
   component: BacktestDetail,
@@ -58,6 +59,23 @@ function BacktestDetail() {
     queryFn: async () => {
       if (!data?.strategy_name) return { data: [], total: 0 };
       const response = await StrategiesService.getBacktestPriceData({
+        strategyName: data.strategy_name,
+        backtestId: id,
+      });
+      return response;
+    },
+  });
+
+  const {
+    data: equityData,
+    isLoading: equityLoading,
+    error: equityError,
+  } = useQuery({
+    queryKey: ["equityCurve", data?.strategy_name, id],
+    enabled: !!data?.strategy_name,
+    queryFn: async () => {
+      if (!data?.strategy_name) return { data: [], total: 0 };
+      const response = await StrategiesService.getBacktestEquityCurve({
         strategyName: data.strategy_name,
         backtestId: id,
       });
@@ -287,6 +305,23 @@ function BacktestDetail() {
             </Text>
           </Box>
         </Grid>
+      </Box>
+      {/* 收益曲线图 */}
+      <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
+        <Heading size="md" mb={4}>
+          {t("backtests.equity_curve_title")}
+        </Heading>
+        {equityLoading ? (
+          <Box display="flex" justifyContent="center" py={8}>
+            <Spinner size="lg" />
+          </Box>
+        ) : equityError ? (
+          <Text color="red.500">
+            {t("common.error")}: {equityError.message}
+          </Text>
+        ) : (
+          <EquityCurveChart data={equityData?.data || []} height={400} />
+        )}
       </Box>
       {/* 价格图表 */}
       <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">

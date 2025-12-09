@@ -1189,6 +1189,13 @@ export type StrategiesGetBacktestPriceDataData = {
 
 export type StrategiesGetBacktestPriceDataResponse = (unknown);
 
+export type StrategiesGetBacktestEquityCurveData = {
+    backtestId: string;
+    strategyName: string;
+};
+
+export type StrategiesGetBacktestEquityCurveResponse = (unknown);
+
 export type UsersReadUsersData = {
     limit?: number;
     skip?: number;

@@ -788,3 +788,52 @@ async def get_backtest_price_data(
         )
 
     return {"data": price_data, "total": len(price_data)}
+
+
+@router.get(
+    "/{strategy_name}/backtests/{backtest_id}/equity_curve",
+)
+async def get_backtest_equity_curve(
+    strategy_name: str,
+    backtest_id: str,
+    session: SessionDep,
+) -> Any:
+    """
+    Get equity curve data for a backtest
+
+    Returns time series of portfolio value over the backtest period
+    """
+
+    from uuid import UUID
+    from datetime import datetime
+    import json
+
+    statement = select(BacktestResult).where(BacktestResult.id == UUID(backtest_id))
+    backtest = session.exec(statement).first()
+
+    if not backtest:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Backtest not found")
+
+    # Parse result_data JSON string
+    result_data = json.loads(backtest.result_data) if backtest.result_data else {}
+    performance = result_data.get("performance", {})
+    time_return = performance.get("time_return", {})
+
+    if not time_return:
+        return {"data": [], "total": 0}
+
+    initial_capital = backtest.initial_capital
+    equity_data = []
+
+    sorted_dates = sorted(time_return.keys())
+
+    current_value = initial_capital
+    for date_str in sorted_dates:
+        daily_return = time_return[date_str]
+        current_value = current_value * (1 + daily_return)
+
+        equity_data.append({"time": date_str, "value": float(current_value)})
+
+    return {"data": equity_data, "total": len(equity_data)}

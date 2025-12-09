@@ -148,7 +148,8 @@
     "submit": "Start Backtest",
     "submitting": "Submitting...",
     "signals_title": "Trading Signals",
-    "price_chart_title": "Price Chart"
+    "price_chart_title": "Price Chart",
+    "equity_curve_title": "Equity Curve"
   },
   "chart": {
     "buySignal": "Buy Signal",
