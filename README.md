@@ -231,11 +231,12 @@ Detailed documentation is available in Chinese:
 - [x] Accurate total return calculation (final_value - initial_capital)
 - [x] Chart auto-fit to display full backtest period
 - [x] Signal time display optimization (date only for daily data)
+- [x] Monthly returns table with color-coded performance
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
 - [ ] Real-time signal push (WebSocket)
-- [ ] Advanced chart features (monthly returns, drawdown curve)
+- [ ] Advanced chart features (drawdown curve, rolling metrics)
 - [ ] Performance metrics dashboard
 
 ### 📋 Planned

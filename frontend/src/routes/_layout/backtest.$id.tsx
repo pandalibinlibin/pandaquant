@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BacktestsService, StrategiesService } from "@/client";
 import PriceChart from "@/components/Charts/PriceChart";
 import { EquityCurveChart } from "@/components/Charts/EquityCurveChart";
+import { MonthlyReturnsTable } from "@/components/Tables/MonthlyReturnsTable";
 
 export const Route = createFileRoute("/_layout/backtest/$id")({
   component: BacktestDetail,
@@ -80,6 +81,23 @@ function BacktestDetail() {
         backtestId: id,
       });
       return response;
+    },
+  });
+
+  const {
+    data: monthlyData,
+    isLoading: monthlyLoading,
+    error: monthlyError,
+  } = useQuery({
+    queryKey: ["monthlyReturns", data?.strategy_name, id],
+    enabled: !!data?.strategy_name,
+    queryFn: async () => {
+      if (!data?.strategy_name) return { data: [], total: 0 };
+      const response = await fetch(
+        `/api/v1/strategies/${data.strategy_name}/backtests/${id}/monthly-returns`
+      );
+      if (!response.ok) throw new Error("Failed to fetch monthly returns");
+      return response.json();
     },
   });
 
@@ -343,6 +361,27 @@ function BacktestDetail() {
           </Box>
         )}
       </Box>
+
+      {/* 月度收益表 */}
+      <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
+        <Heading size="md" mb={4}>
+          {t("backtests.monthly_returns_title")}
+        </Heading>
+        {monthlyLoading ? (
+          <Box display="flex" justifyContent="center" py={8}>
+            <Spinner size="lg" />
+          </Box>
+        ) : monthlyError ? (
+          <Text color="red.500">
+            {t("common.error")}: {monthlyError.message}
+          </Text>
+        ) : monthlyData?.data && monthlyData.data.length > 0 ? (
+          <MonthlyReturnsTable data={monthlyData.data} />
+        ) : (
+          <Text color="gray.500">{t("common.noData")}</Text>
+        )}
+      </Box>
+
       {/* 价格图表 */}
       <Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
         <Heading size="md" mb={4}>

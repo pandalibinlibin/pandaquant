@@ -12,7 +12,21 @@
     "developing": "开发中",
     "debug": "调试信息",
     "configuration": "配置",
-    "currency": "元"
+    "currency": "元",
+    "months": {
+      "jan": "1月",
+      "feb": "2月",
+      "mar": "3月",
+      "apr": "4月",
+      "may": "5月",
+      "jun": "6月",
+      "jul": "7月",
+      "aug": "8月",
+      "sep": "9月",
+      "oct": "10月",
+      "nov": "11月",
+      "dec": "12月"
+    }
   },
   "navigation": {
     "dashboard": "仪表板",
@@ -153,7 +167,10 @@
     "equity_curve_title": "收益曲线",
     "max_drawdown": "最大回撤",
     "drawdown_period": "回撤期间",
-    "drawdown_amount": "回撤金额"
+    "drawdown_amount": "回撤金额",
+    "monthly_returns_title": "月度收益表",
+    "year": "年份",
+    "annual": "年度"
   },
   "chart": {
     "buySignal": "买入信号",

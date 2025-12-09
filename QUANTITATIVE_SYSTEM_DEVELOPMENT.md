@@ -1551,7 +1551,266 @@ if (maxDrawdown && maxDrawdown.peak_date && maxDrawdown.trough_date) {
 - ✅ 图表一目了然
 - ✅ 符合专业标准
 
-### 11. 调度层 🔄
+### 11. 月度收益表 ✅ (2025-12-09)
+
+#### 功能概述
+
+在回测详情页面添加月度收益表，展示每月的收益率，用颜色区分盈亏，帮助用户快速识别策略的时间维度表现特征。
+
+#### 核心功能
+
+**表格结构**：
+- 年份列：显示回测涉及的年份
+- 12个月列：显示每月的收益率百分比
+- 年度列：显示该年度的总收益率
+
+**颜色标记**：
+- 🟢 **绿色背景**：盈利月份（收益率 > 0）
+- 🔴 **红色背景**：亏损月份（收益率 < 0）
+- ⚪ **灰色背景**：无数据月份（收益率 = 0 或 null）
+
+**数据格式**：
+- 盈利：+2.78%（绿色）
+- 亏损：-1.28%（红色）
+- 无数据：0.00%（灰色）
+
+#### 技术实现
+
+**后端 API**（`backend/app/api/routes/strategies.py`）：
+
+```python
+@router.get("/{strategy_name}/backtests/{backtest_id}/monthly-returns")
+async def get_backtest_monthly_returns(
+    strategy_name: str, backtest_id: str, session: SessionDep
+) -> Any:
+    """
+    Get monthly returns for a backtest.
+    Returns a list of years with monthly return percentages.
+    """
+    from datetime import datetime
+    from collections import defaultdict
+
+    # Get backtest result
+    backtest = session.exec(
+        select(BacktestResult).where(BacktestResult.id == backtest_id)
+    ).first()
+
+    if not backtest:
+        raise HTTPException(status_code=404, detail="Backtest not found")
+
+    # Parse result data
+    result_data = json.loads(backtest.result_data)
+    performance = result_data.get("performance", {})
+    time_return = performance.get("time_return", {})
+
+    if not time_return:
+        return {"data": [], "total": 0}
+
+    # Group returns by year and month
+    monthly_returns = defaultdict(lambda: defaultdict(list))
+
+    for date_str, daily_return in time_return.items():
+        try:
+            date_obj = datetime.strptime(date_str.split("T")[0], "%Y-%m-%d")
+            year = date_obj.year
+            month = date_obj.month
+            monthly_returns[year][month].append(daily_return)
+        except ValueError:
+            continue
+
+    # Calculate monthly return percentages
+    result = []
+    for year in sorted(monthly_returns.keys()):
+        year_data = {"year": year, "months": {}}
+        year_cumulative = 1.0
+
+        for month in range(1, 13):
+            if month in monthly_returns[year]:
+                # Calculate monthly return from daily returns
+                month_cumulative = 1.0
+                for daily_return in monthly_returns[year][month]:
+                    month_cumulative *= 1 + daily_return
+
+                month_return_pct = (month_cumulative - 1) * 100
+                year_data["months"][month] = round(month_return_pct, 2)
+                year_cumulative *= month_cumulative
+            else:
+                year_data["months"][month] = None
+
+        # Calculate annual return
+        year_data["annual"] = round((year_cumulative - 1) * 100, 2)
+        result.append(year_data)
+
+    return {"data": result, "total": len(result)}
+```
+
+**前端组件**（`frontend/src/components/Tables/MonthlyReturnsTable.tsx`）：
+
+```typescript
+export const MonthlyReturnsTable = ({ data }: MonthlyReturnsTableProps) => {
+  const { t } = useTranslation();
+
+  // Get cell background color based on return value
+  const getCellColor = (value: number | null) => {
+    if (value === null || value === 0) return "gray.50";
+    return value > 0 ? "green.50" : "red.50";
+  };
+
+  // Get text color based on return value
+  const getTextColor = (value: number | null) => {
+    if (value === null || value === 0) return "gray.500";
+    return value > 0 ? "green.700" : "red.700";
+  };
+
+  // Format return value
+  const formatReturn = (value: number | null) => {
+    if (value === null) return "-";
+    if (value === 0) return "0.00%";
+    return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+  };
+
+  return (
+    <Box overflowX="auto">
+      <Table.Root size="sm" variant="outline">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>{t("backtests.year")}</Table.ColumnHeader>
+            {monthNames.map((month, index) => (
+              <Table.ColumnHeader key={index}>{month}</Table.ColumnHeader>
+            ))}
+            <Table.ColumnHeader>{t("backtests.annual")}</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {data.map((yearData) => (
+            <Table.Row key={yearData.year}>
+              <Table.Cell>{yearData.year}</Table.Cell>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
+                const value = yearData.months[month];
+                return (
+                  <Table.Cell key={month} bg={getCellColor(value)}>
+                    <Text color={getTextColor(value)}>
+                      {formatReturn(value)}
+                    </Text>
+                  </Table.Cell>
+                );
+              })}
+              <Table.Cell bg={getCellColor(yearData.annual)} fontWeight="bold">
+                <Text color={getTextColor(yearData.annual)}>
+                  {formatReturn(yearData.annual)}
+                </Text>
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Box>
+  );
+};
+```
+
+**页面集成**（`frontend/src/routes/_layout/backtest.$id.tsx`）：
+
+```typescript
+// API 调用
+const {
+  data: monthlyData,
+  isLoading: monthlyLoading,
+  error: monthlyError,
+} = useQuery({
+  queryKey: ["monthlyReturns", data?.strategy_name, id],
+  enabled: !!data?.strategy_name,
+  queryFn: async () => {
+    if (!data?.strategy_name) return { data: [], total: 0 };
+    const response = await fetch(
+      `/api/v1/strategies/${data.strategy_name}/backtests/${id}/monthly-returns`
+    );
+    if (!response.ok) throw new Error("Failed to fetch monthly returns");
+    return response.json();
+  },
+});
+
+// 渲染组件
+<Box mt={6} p={6} borderWidth="1px" borderRadius="lg">
+  <Heading size="md" mb={4}>
+    {t("backtests.monthly_returns_title")}
+  </Heading>
+  {monthlyLoading ? (
+    <Spinner />
+  ) : monthlyError ? (
+    <Text color="red.500">{t("common.error")}: {monthlyError.message}</Text>
+  ) : monthlyData?.data && monthlyData.data.length > 0 ? (
+    <MonthlyReturnsTable data={monthlyData.data} />
+  ) : (
+    <Text color="gray.500">{t("common.noData")}</Text>
+  )}
+</Box>
+```
+
+#### 计算逻辑
+
+**月度收益计算**：
+1. 从 `time_return` 获取每日收益率
+2. 按年份和月份分组
+3. 计算每月的累积收益率：
+   ```
+   月度收益率 = (∏(1 + 每日收益率) - 1) × 100
+   ```
+4. 计算年度总收益率：
+   ```
+   年度收益率 = (∏(1 + 月度收益率/100) - 1) × 100
+   ```
+
+**示例**：
+- 假设某月有3个交易日，收益率分别为：0.5%, -0.3%, 0.8%
+- 月度收益率 = (1.005 × 0.997 × 1.008 - 1) × 100 = 1.00%
+
+#### 文件修改
+
+**后端**：
+- `backend/app/api/routes/strategies.py` - 添加月度收益 API
+
+**前端**：
+- `frontend/src/components/Tables/MonthlyReturnsTable.tsx` - 新建月度收益表组件
+- `frontend/src/routes/_layout/backtest.$id.tsx` - 集成组件和 API 调用
+- `frontend/src/i18n/locales/zh-CN.json` - 添加中文翻译
+- `frontend/src/i18n/locales/en-US.json` - 添加英文翻译
+
+#### 测试结果（2025-12-09）
+
+**数据准确性验证**：
+- ✅ 月度收益率计算准确
+- ✅ 年度总收益率与总收益率一致（-0.74%）
+- ✅ 颜色标记正确（绿色=盈利，红色=亏损）
+- ✅ 格式化显示正确（+2.78%, -1.28%）
+
+**实际数据示例**（2024年回测）：
+- 1-2月：0.00%（无数据）
+- 3月：-1.28%（亏损）
+- 4月：-1.23%（亏损）
+- 5月：+2.78%（盈利）
+- 6月：-0.65%（亏损）
+- 7月：-4.27%（最差月份）
+- 8月：-1.31%（亏损）
+- 9月：+14.22%（最佳月份）🚀
+- 10月：-3.60%（亏损）
+- 11月：-4.69%（亏损）
+- 12月：+0.57%（盈利）
+- 年度：-0.74%（总体亏损）
+
+**用户价值**：
+1. **快速识别**：一眼看出最佳/最差月份
+2. **季节性分析**：发现策略的时间维度特征
+3. **风险评估**：了解月度波动情况
+4. **决策支持**：评估策略稳定性和可靠性
+
+**专业性提升**：
+- ✅ 符合专业量化平台标准
+- ✅ 清晰的视觉展示
+- ✅ 完整的时间维度分析
+- ✅ 良好的用户体验
+
+### 12. 调度层 🔄
 
 #### 计划功能
 

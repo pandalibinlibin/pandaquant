@@ -12,7 +12,21 @@
     "developing": "Under Development",
     "debug": "Debug Info",
     "configuration": "Configuration",
-    "currency": "CNY"
+    "currency": "CNY",
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -153,7 +167,10 @@
     "equity_curve_title": "Equity Curve",
     "max_drawdown": "Max Drawdown",
     "drawdown_period": "Drawdown Period",
-    "drawdown_amount": "Drawdown Amount"
+    "drawdown_amount": "Drawdown Amount",
+    "monthly_returns_title": "Monthly Returns",
+    "year": "Year",
+    "annual": "Annual"
   },
   "chart": {
     "buySignal": "Buy Signal",

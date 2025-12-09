@@ -2,6 +2,7 @@
 Strategy management API routes
 """
 
+import json
 from fastapi import APIRouter
 from app.models import BacktestResult
 from sqlmodel import select
@@ -869,3 +870,68 @@ async def get_backtest_equity_curve(
         "total": len(equity_data),
         "max_drawdown": max_drawdown_info,
     }
+
+
+@router.get("/{strategy_name}/backtests/{backtest_id}/monthly-returns")
+async def get_backtest_monthly_returns(
+    strategy_name: str, backtest_id: str, session: SessionDep
+) -> Any:
+    """
+    Get monthly returns for a backtest.
+    Returns a list of years with monthly return percentages.
+    """
+    from datetime import datetime
+    from collections import defaultdict
+
+    # Get backtest result
+    backtest = session.exec(
+        select(BacktestResult).where(BacktestResult.id == backtest_id)
+    ).first()
+
+    if not backtest:
+        raise HTTPException(status_code=404, detail="Backtest not found")
+
+    # Parse result data
+    result_data = json.loads(backtest.result_data)
+    performance = result_data.get("performance", {})
+    time_return = performance.get("time_return", {})
+
+    if not time_return:
+        return {"data": [], "total": 0}
+
+    # Group returns by year and month
+    monthly_returns = defaultdict(lambda: defaultdict(list))
+
+    for date_str, daily_return in time_return.items():
+        try:
+            date_obj = datetime.strptime(date_str.split("T")[0], "%Y-%m-%d")
+            year = date_obj.year
+            month = date_obj.month
+            monthly_returns[year][month].append(daily_return)
+        except ValueError:
+            continue
+
+    # Calculate monthly return percentages
+    result = []
+    for year in sorted(monthly_returns.keys()):
+        year_data = {"year": year, "months": {}}
+        year_cumulative = 1.0
+
+        for month in range(1, 13):
+            if month in monthly_returns[year]:
+                # Calculate monthly return from daily returns
+                month_cumulative = 1.0
+                for daily_return in monthly_returns[year][month]:
+                    month_cumulative *= 1 + daily_return
+
+                month_return_pct = (month_cumulative - 1) * 100
+                year_data["months"][month] = round(month_return_pct, 2)
+                year_cumulative *= month_cumulative
+            else:
+                year_data["months"][month] = None
+
+        # Calculate annual return
+        year_data["annual"] = round((year_cumulative - 1) * 100, 2)
+        result.append(year_data)
+
+    return {"data": result, "total": len(result)}
