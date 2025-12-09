@@ -74,12 +74,18 @@ class BaseStrategy(bt.Strategy, ABC, metaclass=StrategyMeta):
         try:
             from app.models import Signal
             from uuid import UUID
+            from datetime import datetime
 
             # Convert pandas Timestamp to Python datetime
             if hasattr(current_date, "to_pydatetime"):
                 signal_datetime = current_date.to_pydatetime()
             else:
                 signal_datetime = current_date
+            
+            # For daily data, normalize to midnight (remove time component)
+            # This ensures consistent signal times for daily strategies
+            if isinstance(signal_datetime, datetime):
+                signal_datetime = signal_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
 
             # Create signal record
             signal_record = Signal(

@@ -228,6 +228,9 @@ Detailed documentation is available in Chinese:
 - [x] Max drawdown visualization with peak/trough markers
 - [x] Drawdown information card with detailed metrics
 - [x] DateTime serialization for JSON compatibility
+- [x] Accurate total return calculation (final_value - initial_capital)
+- [x] Chart auto-fit to display full backtest period
+- [x] Signal time display optimization (date only for daily data)
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress

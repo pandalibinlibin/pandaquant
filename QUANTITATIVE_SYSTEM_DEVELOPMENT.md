@@ -1445,7 +1445,113 @@ if (maxDrawdown && maxDrawdown.peak_date && maxDrawdown.trough_date) {
 - 清晰的数据展示
 - 良好的用户体验
 
-### 10. 调度层 🔄
+### 10. 回测数据显示优化 ✅ (2025-12-09)
+
+#### 功能概述
+
+修复和优化回测结果页面的数据显示，确保所有指标准确、清晰、符合量化交易的专业标准。
+
+#### 修复内容
+
+**修复 1：最终价值 vs 最终资金**
+- **问题**：前端显示"最终资金"，但实际应该是"最终价值"
+- **原因**：回测结束时可能持有股票，应显示现金+持仓市值的总价值
+- **解决**：
+  - 中文翻译：`final_value` 从"最终资金"改为"最终价值"
+  - 英文翻译：`final_value` 从"Final Capital"改为"Final Value"
+- **技术要点**：`cerebro.broker.getvalue()` 返回的是总价值（现金+持仓）
+
+**修复 2：总收益显示**
+- **问题**：显示 `total_return`（来自 Backtrader 分析器，值为 -0.01，不准确）
+- **原因**：Backtrader 的 Returns 分析器返回的是累积收益，不是金额
+- **解决**：改为计算 `final_value - initial_capital`
+- **代码实现**：
+  ```typescript
+  // 前端计算总收益（金额）
+  {data?.final_value !== null && data?.initial_capital !== null
+    ? (data.final_value - data.initial_capital).toFixed(2)
+    : "-"}
+  ```
+- **验证**：
+  - 初始资金：1,000,000.00 元
+  - 最终价值：992,596.81 元
+  - 总收益：-7,403.19 元 ✅
+
+**修复 3：图表显示完整回测区间**
+- **问题**：价格走势图默认只显示部分数据（如从4月26日开始）
+- **原因**：PriceChart 组件缺少 `fitContent()` 调用
+- **解决**：在设置数据后调用 `chart.timeScale().fitContent()`
+- **代码位置**：`frontend/src/components/Charts/PriceChart.tsx`
+- **效果**：图表自动适配完整的回测时间范围
+
+**修复 4：信号时间显示**
+- **问题**：日线数据的信号时间显示为 17:00 或 16:00
+- **原因**：Backtrader 的 datetime 包含时间信息
+- **解决方案 1**（后端）：将信号时间归零到午夜
+  ```python
+  # 移除时间部分，只保留日期
+  signal_datetime = signal_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+  ```
+- **解决方案 2**（前端）：只显示日期，不显示时间
+  ```typescript
+  // 显示完整年月日
+  new Date(signal.signal_time).toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+  ```
+- **最终效果**：显示为 "2024/09/02"（不再显示时间）
+
+#### 技术要点
+
+**final_value 的正确理解**：
+- `cerebro.broker.getvalue()` = 现金 + 持仓市值
+- 回测结束时可能持有股票，不能只看现金
+- 这是评估策略表现的正确方式
+
+**total_return vs total_return_pct**：
+- `total_return`：Backtrader 分析器返回，可能不准确
+- `total_return_pct`：手动计算 `(final_value - initial_capital) / initial_capital`，准确
+- 前端应显示：
+  - **总收益**（金额）：`final_value - initial_capital`
+  - **收益率**（百分比）：`total_return_pct * 100`
+
+**信号时间的含义**：
+- **信号时间**：策略决策的时间（T日）
+- **实际执行**：下一交易日开盘（T+1日）
+- **原因**：避免未来函数，符合实际交易流程
+- **模拟盘实现**：
+  - T日收盘后运行策略，生成信号
+  - T+1日开盘时执行交易
+
+#### 文件修改
+
+**后端**：
+- `backend/app/domains/strategies/base_strategy.py` - 信号时间归零
+
+**前端**：
+- `frontend/src/components/Charts/PriceChart.tsx` - 添加 fitContent()
+- `frontend/src/routes/_layout/backtest.$id.tsx` - 修复总收益计算和信号时间显示
+- `frontend/src/i18n/locales/zh-CN.json` - 翻译修正
+- `frontend/src/i18n/locales/en-US.json` - 翻译修正
+
+#### 测试结果（2025-12-09）
+
+**数据准确性验证**：
+- ✅ 最终价值显示正确（包含持仓）
+- ✅ 总收益计算准确（-7,403.19 元）
+- ✅ 收益率计算准确（-0.74%）
+- ✅ 图表显示完整回测区间
+- ✅ 信号时间只显示日期（2024/09/02）
+
+**用户体验提升**：
+- ✅ 指标含义清晰
+- ✅ 数据准确可靠
+- ✅ 图表一目了然
+- ✅ 符合专业标准
+
+### 11. 调度层 🔄
 
 #### 计划功能
 

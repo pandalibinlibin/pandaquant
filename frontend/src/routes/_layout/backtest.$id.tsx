@@ -400,12 +400,10 @@ function BacktestDetail() {
                   <Table.Cell w="15%">
                     <Text fontSize="sm">
                       {signal.signal_time
-                        ? new Date(signal.signal_time).toLocaleString("zh-CN", {
+                        ? new Date(signal.signal_time).toLocaleDateString("zh-CN", {
+                            year: "numeric",
                             month: "2-digit",
                             day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
                           })
                         : "-"}
                     </Text>
