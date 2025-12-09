@@ -166,9 +166,10 @@ function BacktestDetail() {
         <Grid templateColumns="repeat(3, 1fr)" gap={4}>
           <Box>
             <Text fontWeight="bold">{t("backtests.total_return_abs")}:</Text>
-            <Text color={data?.total_return >= 0 ? "red.500" : "green.500"}>
-              {data?.total_return !== null && data?.total_return !== undefined
-                ? data.total_return.toFixed(2)
+            <Text color={(data?.final_value ?? 0) >= (data?.initial_capital ?? 0) ? "red.500" : "green.500"}>
+              {data?.final_value !== null && data?.final_value !== undefined &&
+               data?.initial_capital !== null && data?.initial_capital !== undefined
+                ? (data.final_value - data.initial_capital).toFixed(2)
                 : "-"}
             </Text>
           </Box>

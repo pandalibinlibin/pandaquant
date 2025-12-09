@@ -128,7 +128,7 @@
     "start_date": "开始日期",
     "end_date": "结束日期",
     "initial_capital": "初始资金",
-    "final_value": "最终资金",
+    "final_value": "最终价值",
     "total_return_abs": "总收益",
     "avg_annual_return": "平均年化收益率",
     "calmar_ratio": "卡玛比率",
