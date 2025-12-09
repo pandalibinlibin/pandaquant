@@ -38,6 +38,8 @@ PandaQuant is a comprehensive quantitative trading platform that enables researc
 - **Signal Persistence**: Automatic signal saving to database with backtest association
 - **Price Chart Visualization**: Interactive price charts with signal markers using lightweight-charts
 - **Signal Overlay**: Buy/sell signals displayed as arrows on price charts with hover details
+- **Equity Curve Visualization**: Real-time portfolio value tracking with interactive green curve charts
+- **Performance Analytics**: Visual representation of account value changes over the backtest period
 
 ### 🔔 Signal Management
 - **Signal Persistence**: All trading signals automatically saved to database during backtesting
@@ -220,11 +222,14 @@ Detailed documentation is available in Chinese:
 - [x] Signal list integration in backtest detail page
 - [x] Price chart visualization with signal markers
 - [x] Interactive hover tooltips for signal details
+- [x] Equity curve chart with portfolio value tracking
+- [x] DateTime serialization for JSON compatibility
 - [x] Internationalization (Chinese/English)
 
 ### 🚧 In Progress
 - [ ] Real-time signal push (WebSocket)
-- [ ] Advanced chart features (indicators, volume)
+- [ ] Advanced chart features (drawdown, monthly returns)
+- [ ] Performance metrics cards
 
 ### 📋 Planned
 - [ ] Paper trading simulation

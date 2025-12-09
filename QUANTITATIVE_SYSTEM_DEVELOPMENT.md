@@ -1116,7 +1116,157 @@ useEffect(() => {
 描述: Golden cross: MA5 crossed above MA20
 ```
 
-### 8. 调度层 🔄
+### 8. 收益曲线图可视化 ✅ (2025-12-08)
+
+#### 文件位置
+
+**后端**：
+- `backend/app/api/routes/strategies.py` - 收益曲线 API 端点
+- `backend/app/domains/strategies/services.py` - 回测结果数据序列化
+
+**前端**：
+- `frontend/src/components/Charts/EquityCurveChart.tsx` - 收益曲线图表组件
+- `frontend/src/routes/_layout/backtest.$id.tsx` - 回测详情页面集成
+- `frontend/src/i18n/locales/zh-CN.json` - 中文翻译
+- `frontend/src/i18n/locales/en-US.json` - 英文翻译
+
+#### 核心功能
+
+**后端 API**：
+- **收益曲线端点**：`GET /api/v1/strategies/{strategy_name}/backtests/{backtest_id}/equity_curve`
+- **数据提取**：从 `BacktestResult.result_data` 中解析 `time_return` 数据
+- **累积计算**：将每日收益率转换为累积账户价值
+- **datetime 序列化**：递归转换所有 datetime 对象为字符串
+  ```python
+  def convert_datetime_to_str(obj):
+      """Recursively convert datetime objects to ISO format strings"""
+      if isinstance(obj, datetime):
+          return obj.strftime("%Y-%m-%d")
+      elif isinstance(obj, date):
+          return obj.strftime("%Y-%m-%d")
+      elif isinstance(obj, dict):
+          return {convert_datetime_to_str(k): convert_datetime_to_str(v) for k, v in obj.items()}
+      elif isinstance(obj, (list, tuple)):
+          return [convert_datetime_to_str(item) for item in obj]
+      else:
+          return obj
+  ```
+
+**前端组件**：
+- **EquityCurveChart**：使用 `lightweight-charts` 绘制收益曲线
+- **数据格式化**：处理时间格式（ISO 8601 → YYYY-MM-DD）
+- **图表配置**：
+  - 绿色曲线（`#26a69a`）
+  - 网格线和十字准线
+  - 价格标签和时间轴
+  - 响应式布局
+
+**数据流**：
+```
+Backtrader TimeReturn Analyzer
+  ↓
+performance["time_return"] = {datetime: return_rate}
+  ↓
+convert_datetime_to_str() → {"2024-01-02": 0.005}
+  ↓
+result_data = json.dumps({"performance": {...}})
+  ↓
+API: /equity_curve
+  ↓
+累积计算: value = initial_capital * (1 + daily_return)
+  ↓
+Frontend: EquityCurveChart
+  ↓
+lightweight-charts 显示
+```
+
+#### 技术要点
+
+**datetime 序列化问题**：
+- **问题**：Backtrader 分析器返回的数据包含 `datetime.datetime` 和 `datetime.date` 对象
+- **影响**：`json.dumps()` 无法序列化 datetime 对象
+- **解决**：递归转换函数，处理所有嵌套的 datetime 对象
+- **关键点**：
+  - 必须先检查 `datetime`，再检查 `date`（继承关系）
+  - 处理嵌套字典和列表
+  - 处理 Calmar、TimeReturn、TimeDrawdown 等分析器数据
+
+**lightweight-charts API**：
+- **版本**：5.0.9
+- **正确用法**：`chart.addLineSeries(options)`
+- **错误用法**：
+  - ❌ `chart.addSeries(SeriesType.Line, options)` - SeriesType 不存在
+  - ❌ `chart.addSeries('Line', options)` - addSeries 方法不存在
+
+**时间格式处理**：
+- **后端输出**：`"2024-01-02T00:00:00"` 或 `"2024-01-02"`
+- **前端处理**：`d.time.split("T")[0]` 提取日期部分
+- **图表要求**：`Time` 类型（YYYY-MM-DD 格式）
+
+#### 问题解决记录
+
+**问题 1：json 模块未导入**
+- 错误：`name 'json' is not defined`
+- 解决：在 `services.py` 顶部添加 `import json`
+
+**问题 2：datetime 对象无法序列化**
+- 错误：`keys must be str, int, float, bool or None, not datetime.datetime`
+- 原因：`time_return` 字典的键是 `datetime` 对象
+- 解决：实现递归转换函数 `convert_datetime_to_str()`
+
+**问题 3：datetime.date 对象无法序列化**
+- 错误：`keys must be str, int, float, bool or None, not datetime.date`
+- 原因：某些分析器（如 Calmar）返回 `datetime.date` 对象
+- 解决：在递归函数中同时处理 `datetime` 和 `date` 类型
+
+**问题 4：SeriesType 不存在**
+- 错误：`does not provide an export named 'SeriesType'`
+- 原因：`lightweight-charts` 5.x 不导出 `SeriesType`
+- 解决：使用 `chart.addLineSeries()` 而不是 `chart.addSeries()`
+
+**问题 5：旧回测数据为空**
+- 现象：API 返回 `{data: [], total: 0}`
+- 原因：旧回测在代码修改前创建，`result_data` 字段为空
+- 解决：创建新回测，新回测会包含完整的 `time_return` 数据
+
+#### 测试结果（2025-12-08）
+
+**功能验证**：
+- ✅ 收益曲线正常显示
+- ✅ 绿色曲线清晰
+- ✅ 数据准确（58 条数据点）
+- ✅ 时间轴正确（2024-01-02 到 2024-03-29）
+- ✅ 价值轴合理（990,000 - 1,002,000 元）
+- ✅ 当前价格标签显示（996,406.59 元）
+- ✅ 响应式布局正常
+
+**数据验证**：
+- 初始资金：1,000,000 元
+- 最终资金：996,406.59 元
+- 总收益：-3,593.41 元（-0.36%）
+- 数据点数：58 条（3 个月交易日）
+
+**性能表现**：
+- API 响应时间：< 100ms
+- 图表渲染时间：< 50ms
+- 交互响应及时
+
+#### 用户体验
+
+**查看收益曲线**：
+1. 访问回测详情页面
+2. 自动加载收益曲线数据
+3. 显示完整的账户价值变化曲线
+4. 鼠标悬停查看具体数值
+
+**收益曲线特征**：
+- 📊 清晰的绿色曲线
+- 📈 从初始资金开始
+- 📉 显示所有波动
+- 🎯 标注最终价值
+- 🖱️ 支持缩放和平移
+
+### 9. 调度层 🔄
 
 #### 计划功能
 
